@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { makeCreateUser } from "./modules/auth/auth.repository.js";
@@ -8,13 +9,21 @@ import {
   makeRevokeSession,
 } from "./modules/auth/session.repository.js";
 import { buildApp } from "./app.js";
+import {
+  makeSearchCatalog,
+  makeGetTrendingMovies,
+} from "./modules/catalog/tmdb.client.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
 
 const db = pool ? drizzle(pool) : null;
 
+const tmdbToken = process.env.TMDB_READ_ACCESS_TOKEN?.trim();
+
 const app = buildApp({
+  getTrendingMovies: tmdbToken ? makeGetTrendingMovies(tmdbToken) : undefined,
+  searchCatalog: tmdbToken ? makeSearchCatalog(tmdbToken) : undefined,
   createUser: db ? makeCreateUser(db) : undefined,
   findUserByEmail: db ? makeFindUserByEmail(db) : undefined,
   createSession: db ? makeCreateSession(db) : undefined,
