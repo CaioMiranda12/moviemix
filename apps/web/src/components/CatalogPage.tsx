@@ -69,6 +69,7 @@ export function CatalogPage({
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -96,7 +97,7 @@ export function CatalogPage({
     return () => {
       active = false;
     };
-  }, [search]);
+  }, [search, retry]);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -111,13 +112,19 @@ export function CatalogPage({
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 sm:px-8">
+    <main className="mx-auto min-h-screen max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
+      <a href="#catalog-content" className="skip-link">
+        Pular para o conteúdo
+      </a>
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <p className="text-2xl font-bold text-emerald-400">MovieMix</p>
           <p className="mt-1 text-xs text-zinc-400">Conectado como {email}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <nav
+          aria-label="Navegação da conta"
+          className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3"
+        >
           <Link
             to="/profile"
             className="rounded-xl border border-sky-400/40 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-white/10"
@@ -150,7 +157,7 @@ export function CatalogPage({
           >
             {loggingOut ? "Saindo..." : "Sair"}
           </button>
-        </div>
+        </nav>
       </header>
 
       {logoutError && (
@@ -159,7 +166,7 @@ export function CatalogPage({
         </p>
       )}
 
-      <section className="py-10">
+      <section id="catalog-content" tabIndex={-1} className="py-8 sm:py-10">
         <h1 className="text-3xl font-bold sm:text-4xl">
           Descubra sua próxima história
         </h1>
@@ -230,9 +237,18 @@ export function CatalogPage({
             Carregando catálogo...
           </p>
         ) : error ? (
-          <p role="alert" className="text-red-400">
-            {error}
-          </p>
+          <div className="space-y-3">
+            <p role="alert" className="text-red-400">
+              {error}
+            </p>
+            <button
+              type="button"
+              onClick={() => setRetry((value) => value + 1)}
+              className="rounded-xl border border-white/20 px-4 py-2 text-sm font-medium hover:bg-white/10"
+            >
+              Tentar novamente
+            </button>
+          </div>
         ) : items.length === 0 ? (
           <p className="text-zinc-400">Nenhum resultado encontrado.</p>
         ) : (
