@@ -2,7 +2,11 @@
 
 **Descubra filmes e séries e organize o que você quer assistir.** Aplicação web em português, com catálogo integrado à TMDB, conta pessoal, favoritos, acompanhamento de consumo, avaliações e um painel de estatísticas.
 
-> **Estado do projeto:** aplicação funcional para desenvolvimento local. A publicação em produção ainda não foi configurada ou validada. Este README descreve as funcionalidades presentes no código; não há link público de demonstração neste momento.
+> **Estado do projeto:** MVP funcional, publicado e validado em produção. O desenvolvimento continua conforme o planejamento das próximas sprints.
+>
+> **Demonstração online:** https://moviemix.vercel.app
+>
+> **API:** https://moviemix-api-j6u4.onrender.com
 
 ## Funcionalidades
 
@@ -24,6 +28,24 @@
 | Autenticação | Argon2id, sessões e cookies HttpOnly                                          |
 | Testes       | Vitest, Fastify `inject()`, React Testing Library, jsdom e PostgreSQL isolado |
 | Ferramentas  | npm workspaces, Docker Compose, ESLint e Prettier                             |
+
+## Hospedagem
+
+O MovieMix está publicado utilizando serviços com planos gratuitos:
+
+| Serviço | Plataforma | Responsabilidade |
+| --- | --- | --- |
+| Frontend | Vercel Hobby | Aplicação React/Vite |
+| Backend | Render Free | API Fastify |
+| Banco de dados | Neon Free | PostgreSQL |
+
+O frontend utiliza o proxy `/api` da Vercel para encaminhar requisições ao backend no Render.
+
+As credenciais do banco e da TMDB permanecem exclusivamente nas variáveis de ambiente da API.
+
+**Observação:** por utilizar o plano gratuito do Render, a API pode demorar alguns segundos para responder após um período de inatividade.
+
+Para detalhes de configuração, consulte `docs/deployment/`.
 
 ## Estrutura do repositório
 
@@ -145,9 +167,11 @@ As rotas de dados pessoais exigem autenticação. Consulte os arquivos `*.routes
 
 - Não versione `.env`, senhas ou tokens da TMDB.
 - A API utiliza cookies de sessão `HttpOnly` e verifica a origem em operações que modificam dados.
-- As portas dos serviços Docker são expostas apenas no loopback para uso local.
-- **O Compose atual é voltado ao desenvolvimento, não a produção.** Um deploy público exige revisar TLS/HTTPS, cookies, variáveis de ambiente, hospedagem do PostgreSQL, migrações e roteamento entre frontend e API.
-- Consulte `npm audit` periodicamente; a auditoria de desenvolvimento pode reportar dependências transitivas que exigem atualização planejada.
+- Consulte `npm audit` periodicamente para acompanhar vulnerabilidades nas dependências.
+- O Docker Compose é utilizado apenas no ambiente de desenvolvimento local.
+- Em produção, o frontend utiliza HTTPS na Vercel, a API é hospedada no Render e o PostgreSQL é gerenciado pelo Neon.
+- A API valida a origem das requisições que modificam dados utilizando `PUBLIC_APP_ORIGIN`.
+- As credenciais de produção são armazenadas nas variáveis de ambiente dos serviços, nunca no repositório.
 
 ## Capturas de tela
 
@@ -159,6 +183,7 @@ Os metadados e imagens de filmes e séries são fornecidos pela **TMDB (The Movi
 
 ## Próximos passos
 
-- Revisar `.env.example` e preparar configurações específicas de produção.
-- Definir estratégia de deploy e executar validações em ambiente hospedado.
-- Adicionar capturas de tela e um roteiro curto de demonstração para portfólio.
+- Continuar o desenvolvimento conforme o roadmap documentado em `docs/sprints/`.
+- Adicionar capturas de tela da aplicação publicada.
+- Evoluir a experiência de uso e implementar as funcionalidades previstas nas próximas sprints.
+- Manter os testes automatizados e a documentação atualizados a cada entrega.
