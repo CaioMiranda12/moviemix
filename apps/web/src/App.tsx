@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { LoginForm } from "./components/LoginForm";
 import { CatalogPage } from "./components/CatalogPage";
+import { FavoritesPage } from "./components/FavoritesPage";
 import { TitleDetailsPage } from "./components/TitleDetailsPage";
 import { RegisterForm } from "./components/RegisterForm";
 import { authApi, type AuthUser } from "./lib/auth-api";
@@ -102,6 +103,11 @@ function AppRoutes() {
             <Navigate to="/login" replace />
           )
         }
+      />
+
+      <Route
+        path="/my-list"
+        element={user ? <FavoritesPage /> : <Navigate to="/login" replace />}
       />
 
       <Route

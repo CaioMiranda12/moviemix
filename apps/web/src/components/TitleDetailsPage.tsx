@@ -1,3 +1,4 @@
+import { FavoriteButton } from "./FavoriteButton";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -131,6 +132,7 @@ export function TitleDetailsPage() {
                   ))}
                 </div>
               )}
+              <FavoriteButton mediaType={details.mediaType} id={details.id} />
               <h2 className="mt-9 text-xl font-semibold">Sinopse</h2>
               <p className="mt-3 max-w-3xl leading-7 text-zinc-300">
                 {details.overview || "Sinopse indisponível."}

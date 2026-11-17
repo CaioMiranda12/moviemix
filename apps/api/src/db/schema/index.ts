@@ -93,6 +93,25 @@ export const media = pgTable(
   ],
 );
 
+export const favorites = pgTable(
+  "favorites",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mediaId: uuid("media_id")
+      .notNull()
+      .references(() => media.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.mediaId] }),
+    index("favorites_user_created_idx").on(table.userId, table.createdAt),
+  ],
+);
+
 export const playlists = pgTable(
   "playlists",
   {
