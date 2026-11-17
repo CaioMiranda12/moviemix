@@ -15,3 +15,35 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Foco visível para navegação por teclado, inclusive em controles sem classes Tailwind. */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid #34d399;
+  outline-offset: 3px;
+}
+
+/* O atalho aparece apenas ao receber foco, sem ocupar espaço no layout. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -5rem;
+  z-index: 50;
+  border-radius: 0.75rem;
+  background: #34d399;
+  color: #101014;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
