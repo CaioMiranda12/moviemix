@@ -1,3 +1,5 @@
+import { registerWatchStatusRoutes } from "./modules/watch-status/watch-status.routes.js";
+import type { WatchStatusRepository } from "./modules/watch-status/watch-status.repository.js";
 import { registerFavoritesRoutes } from "./modules/favorites/favorites.routes.js";
 import type { FavoritesRepository } from "./modules/favorites/favorites.repository.js";
 import { registerCatalogRoutes } from "./modules/catalog/catalog.routes.js";
@@ -28,6 +30,7 @@ export interface AppOptions {
   findSessionUser?: FindSessionUser;
   revokeSession?: RevokeSession;
   favoritesRepository?: FavoritesRepository;
+  watchStatusRepository?: WatchStatusRepository;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -52,6 +55,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     app,
     options.findSessionUser,
     options.favoritesRepository,
+    options.getCatalogDetails,
+  );
+
+  registerWatchStatusRoutes(
+    app,
+    options.findSessionUser,
+    options.watchStatusRepository,
     options.getCatalogDetails,
   );
 
