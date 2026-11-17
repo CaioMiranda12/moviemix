@@ -1,61 +1,81 @@
-# S0-07 — PostgreSQL e Docker Compose
+# Desenvolvimento local — PostgreSQL e Docker Compose
 
 ## Pré-requisitos
 
 - Docker Desktop com Docker Compose v2
-- Node.js 22 e npm 10 para os comandos locais
+- Node.js 22 e npm 10
+- Arquivo `.env` local (opcional para o banco; necessário para o catálogo TMDB)
 
-## Instalação do patch
+## Configuração de ambiente
 
-Aplique os arquivos deste patch sobre a raiz do repositório, preservando `.git` e os demais arquivos.
-**Depois execute `npm install` na raiz**, pois as novas dependências `pg` e `@types/pg` precisam ser registradas no `package-lock.json` antes do `docker compose build` (o patch não inclui um lockfile regenerado).
+Copie `.env.example` para `.env` na raiz do projeto e preencha `TMDB_READ_ACCESS_TOKEN` com seu token de leitura da TMDB. **Nunca versione o `.env`.** A senha `moviemix_dev` é somente para desenvolvimento local.
 
-## Executar os serviços
+As conexões são diferentes conforme o processo:
+
+| Processo                           | Endereço do PostgreSQL |
+| ---------------------------------- | ---------------------- |
+| API e Drizzle no Windows           | `localhost:5433`       |
+| API no Docker Compose              | `db:5432`              |
+| Banco isolado de testes no Windows | `localhost:5434`       |
+
+O Compose fornece `DATABASE_URL` diretamente ao container da API, apontando para `db:5432`. A variável `DATABASE_URL` no `.env.example` serve para comandos executados **no Windows**; ela não substitui a configuração da API dentro do Compose.
+
+## Iniciar o projeto
+
+Na raiz do repositório:
 
 ```powershell
-docker compose up --build -d
+npm ci
+docker compose up -d --build db api
 docker compose ps
+```
+
+Aplicar as migrações versionadas no banco local:
+
+```powershell
+$env:DATABASE_URL="postgres://moviemix:moviemix_dev@localhost:5433/moviemix"
+npm run db:migrate -w @moviemix/api
+Remove-Item Env:DATABASE_URL
+```
+
+Se alterou `POSTGRES_PASSWORD`, use a mesma senha na URL acima. Não execute `db:generate` ao apenas instalar o projeto: as migrações SQL já estão versionadas.
+
+Em outro terminal:
+
+```powershell
+npm run dev:web
+```
+
+- Frontend: http://localhost:5173
+- API: http://localhost:3333/health
+- Banco pronto: http://localhost:3333/health/ready
+
+## Banco isolado de testes
+
+```powershell
+docker compose --profile test up -d test-db
+$env:DATABASE_URL="postgres://moviemix_test:moviemix_test_local@localhost:5434/moviemix_test"
+npm run db:migrate -w @moviemix/api
+Remove-Item Env:DATABASE_URL
+$env:TEST_DATABASE_URL="postgres://moviemix_test:moviemix_test_local@localhost:5434/moviemix_test"
+npm run test:integration
+Remove-Item Env:TEST_DATABASE_URL
+```
+
+O banco de testes usa armazenamento temporário; não o confunda com o banco de desenvolvimento.
+
+## Diagnóstico e cuidados
+
+```powershell
+docker compose ps
+docker compose logs --tail=100 api
 Invoke-RestMethod http://localhost:3333/health
 Invoke-RestMethod http://localhost:3333/health/ready
 ```
 
-Esperado: `/health` retorna `{ "status": "ok" }` e `/health/ready` retorna `{ "status": "ready", "database": "connected" }`.
-
-```powershell
-docker compose logs -f api
-docker compose down
-```
-
-`docker compose down` preserva o volume. **Não use `docker compose down -v`** sem desejar apagar os dados locais.
-
-## Executar a API no host
-
-Inicie somente o banco:
-
-```powershell
-docker compose up -d db
-$env:DATABASE_URL = "postgres://moviemix:moviemix_dev@localhost:5432/moviemix"
-npm run dev:api
-```
-
-A API lê `DATABASE_URL` do ambiente do processo; o arquivo `.env.example` é somente um modelo, **não é carregado automaticamente**. No Docker Compose a variável é fornecida pelo próprio Compose.
-
-## Verificações
-
-```powershell
-npm run format
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-npm audit
-```
-
-## Segurança e limites
-
-- A senha padrão é **somente para desenvolvimento**; altere-a para outros ambientes.
-- A publicação de portas está restrita ao `127.0.0.1` do host.
-- `/health/ready` realiza `SELECT 1`, mas **não valida migrations ou tabelas de domínio**.
-- A conexão ao banco é realizada pelo pacote `pg`; o Drizzle ORM e as migrations virão em uma próxima issue.
-- Não versionar `.env` ou credenciais.
-- Se mudar a senha após a criação do volume, o PostgreSQL não atualiza automaticamente a senha do usuário existente.
+- `docker compose down` mantém o volume de desenvolvimento. **`docker compose down -v` apaga os dados do volume**.
+- Alterar `POSTGRES_PASSWORD` depois da criação do volume **não altera automaticamente** a senha do usuário já existente no PostgreSQL.
+- As portas da API e dos bancos estão vinculadas a `127.0.0.1` no host. Isso não constitui uma configuração de produção.
+- `/health/ready` verifica a conexão ao banco, não se todas as migrações estão aplicadas.
+- Não publique tokens, senhas, cookies ou conteúdo do `.env` em commits, capturas de tela ou logs compartilhados.
+- A implantação em produção exige configuração própria de secrets, banco, HTTPS, CORS/origens e migrações; este guia cobre somente desenvolvimento local.
