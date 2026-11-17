@@ -119,6 +119,12 @@ export function CatalogPage({
         </div>
         <div className="flex items-center gap-3">
           <Link
+            to="/ratings"
+            className="rounded-xl border border-amber-400/40 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-white/10"
+          >
+            ★ Minhas avaliações
+          </Link>
+          <Link
             to="/watching"
             className="rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-white/10"
           >

@@ -1,3 +1,5 @@
+import { registerRatingsRoutes } from "./modules/ratings/ratings.routes.js";
+import type { RatingsRepository } from "./modules/ratings/ratings.repository.js";
 import { registerWatchStatusRoutes } from "./modules/watch-status/watch-status.routes.js";
 import type { WatchStatusRepository } from "./modules/watch-status/watch-status.repository.js";
 import { registerFavoritesRoutes } from "./modules/favorites/favorites.routes.js";
@@ -31,6 +33,7 @@ export interface AppOptions {
   revokeSession?: RevokeSession;
   favoritesRepository?: FavoritesRepository;
   watchStatusRepository?: WatchStatusRepository;
+  ratingsRepository?: RatingsRepository;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -62,6 +65,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     app,
     options.findSessionUser,
     options.watchStatusRepository,
+    options.getCatalogDetails,
+  );
+
+  registerRatingsRoutes(
+    app,
+    options.findSessionUser,
+    options.ratingsRepository,
     options.getCatalogDetails,
   );
 

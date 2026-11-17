@@ -112,6 +112,30 @@ export const favorites = pgTable(
   ],
 );
 
+export const ratings = pgTable(
+  "ratings",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mediaId: uuid("media_id")
+      .notNull()
+      .references(() => media.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.mediaId] }),
+    index("ratings_user_updated_idx").on(table.userId, table.updatedAt),
+    check("ratings_score_range_ck", sql`${table.score} BETWEEN 1 AND 5`),
+  ],
+);
+
 export const playlists = pgTable(
   "playlists",
   {
