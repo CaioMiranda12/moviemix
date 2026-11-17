@@ -117,7 +117,13 @@ export function CatalogPage({
           <p className="text-2xl font-bold text-emerald-400">MovieMix</p>
           <p className="mt-1 text-xs text-zinc-400">Conectado como {email}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/profile"
+            className="rounded-xl border border-sky-400/40 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-white/10"
+          >
+            Meu perfil
+          </Link>
           <Link
             to="/ratings"
             className="rounded-xl border border-amber-400/40 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-white/10"

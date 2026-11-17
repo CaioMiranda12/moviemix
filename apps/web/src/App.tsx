@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { LoginForm } from "./components/LoginForm";
 import { CatalogPage } from "./components/CatalogPage";
+import { ProfilePage } from "./components/ProfilePage";
 import { RatingsPage } from "./components/RatingsPage";
 import { WatchStatusPage } from "./components/WatchStatusPage";
 import { FavoritesPage } from "./components/FavoritesPage";
@@ -115,6 +116,17 @@ function AppRoutes() {
       <Route
         path="/watching"
         element={user ? <WatchStatusPage /> : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/profile"
+        element={
+          user ? (
+            <ProfilePage email={user.email} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
       />
 
       <Route

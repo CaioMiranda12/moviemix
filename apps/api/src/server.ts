@@ -1,3 +1,4 @@
+import { makeProfileStatsRepository } from "./modules/profile/profile-stats.repository.js";
 import { makeRatingsRepository } from "./modules/ratings/ratings.repository.js";
 import { makeWatchStatusRepository } from "./modules/watch-status/watch-status.repository.js";
 import { makeFavoritesRepository } from "./modules/favorites/favorites.repository.js";
@@ -37,6 +38,7 @@ const app = buildApp({
   favoritesRepository: db ? makeFavoritesRepository(db) : undefined,
   watchStatusRepository: db ? makeWatchStatusRepository(db) : undefined,
   ratingsRepository: db ? makeRatingsRepository(db) : undefined,
+  profileStatsRepository: db ? makeProfileStatsRepository(db) : undefined,
   checkDatabase: pool
     ? async () => {
         await pool.query("SELECT 1");
