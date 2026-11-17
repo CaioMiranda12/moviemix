@@ -2,7 +2,11 @@ import Fastify, { type FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import { registerAuthRoutes } from "./modules/auth/auth.routes.js";
 import { type FindUserByEmail } from "./modules/auth/login.repository.js";
-import { type CreateSession } from "./modules/auth/session.repository.js";
+import {
+  type CreateSession,
+  type FindSessionUser,
+  type RevokeSession,
+} from "./modules/auth/session.repository.js";
 import { type CreateUser } from "./modules/auth/auth.repository.js";
 
 export interface AppOptions {
@@ -10,6 +14,8 @@ export interface AppOptions {
   createUser?: CreateUser;
   findUserByEmail?: FindUserByEmail;
   createSession?: CreateSession;
+  findSessionUser?: FindSessionUser;
+  revokeSession?: RevokeSession;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {

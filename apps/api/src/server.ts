@@ -2,7 +2,11 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { makeCreateUser } from "./modules/auth/auth.repository.js";
 import { makeFindUserByEmail } from "./modules/auth/login.repository.js";
-import { makeCreateSession } from "./modules/auth/session.repository.js";
+import {
+  makeCreateSession,
+  makeFindSessionUser,
+  makeRevokeSession,
+} from "./modules/auth/session.repository.js";
 import { buildApp } from "./app.js";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -14,6 +18,8 @@ const app = buildApp({
   createUser: db ? makeCreateUser(db) : undefined,
   findUserByEmail: db ? makeFindUserByEmail(db) : undefined,
   createSession: db ? makeCreateSession(db) : undefined,
+  findSessionUser: db ? makeFindSessionUser(db) : undefined,
+  revokeSession: db ? makeRevokeSession(db) : undefined,
   checkDatabase: pool
     ? async () => {
         await pool.query("SELECT 1");
