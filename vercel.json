@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "buildCommand": "npm run build -w @moviemix/web",
@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://REPLACE_WITH_RENDER_HOST.onrender.com/:path*"
+      "destination": "https://moviemix-api-j6u4.onrender.com/:path*"
     },
     {
       "source": "/((?!api/).*)",
