@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { LoginForm } from "./components/LoginForm";
 import { CatalogPage } from "./components/CatalogPage";
+import { TitleDetailsPage } from "./components/TitleDetailsPage";
 import { RegisterForm } from "./components/RegisterForm";
 import { authApi, type AuthUser } from "./lib/auth-api";
 
@@ -101,6 +102,11 @@ function AppRoutes() {
             <Navigate to="/login" replace />
           )
         }
+      />
+
+      <Route
+        path="/:mediaType/:id"
+        element={user ? <TitleDetailsPage /> : <Navigate to="/login" replace />}
       />
 
       <Route

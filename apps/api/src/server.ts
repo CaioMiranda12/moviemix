@@ -11,6 +11,7 @@ import {
 import { buildApp } from "./app.js";
 import {
   makeSearchCatalog,
+  makeGetCatalogDetails,
   makeGetTrendingMovies,
 } from "./modules/catalog/tmdb.client.js";
 
@@ -24,6 +25,7 @@ const tmdbToken = process.env.TMDB_READ_ACCESS_TOKEN?.trim();
 const app = buildApp({
   getTrendingMovies: tmdbToken ? makeGetTrendingMovies(tmdbToken) : undefined,
   searchCatalog: tmdbToken ? makeSearchCatalog(tmdbToken) : undefined,
+  getCatalogDetails: tmdbToken ? makeGetCatalogDetails(tmdbToken) : undefined,
   createUser: db ? makeCreateUser(db) : undefined,
   findUserByEmail: db ? makeFindUserByEmail(db) : undefined,
   createSession: db ? makeCreateSession(db) : undefined,

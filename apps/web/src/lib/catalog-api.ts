@@ -35,3 +35,28 @@ export const catalogApi = {
     return getCatalog(`/search?${params.toString()}`);
   },
 };
+
+export type CatalogDetails = CatalogItem & {
+  mediaType: MediaType;
+  backdropPath: string | null;
+  genres: { id: number; name: string }[];
+};
+
+export async function getCatalogDetails(
+  mediaType: MediaType,
+  id: string,
+): Promise<CatalogDetails> {
+  if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id))) {
+    throw new Error("Identificador inválido.");
+  }
+  const response = await fetch(`/api/catalog/${mediaType}/${id}`, {
+    credentials: "same-origin",
+  });
+  if (response.status === 404) throw new Error("Título não encontrado.");
+  if (!response.ok) throw new Error("Não foi possível carregar os detalhes.");
+  const data = (await response.json()) as { result?: CatalogDetails };
+  if (!data.result || data.result.id !== Number(id)) {
+    throw new Error("Resposta inválida do catálogo.");
+  }
+  return data.result;
+}

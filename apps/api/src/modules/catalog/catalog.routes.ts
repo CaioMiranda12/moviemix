@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import {
   TmdbUnavailableError,
+  TmdbNotFoundError,
+  type GetCatalogDetails,
   type GetTrendingMovies,
   type SearchCatalog,
   type CatalogMediaType,
@@ -10,6 +12,7 @@ export function registerCatalogRoutes(
   app: FastifyInstance,
   getTrendingMovies?: GetTrendingMovies,
   searchCatalog?: SearchCatalog,
+  getCatalogDetails?: GetCatalogDetails,
 ): void {
   app.get("/catalog/trending", async (request, reply) => {
     if (!getTrendingMovies) {
@@ -49,6 +52,37 @@ export function registerCatalogRoutes(
       } catch (error) {
         if (!(error instanceof TmdbUnavailableError)) {
           request.log.error({ err: error }, "Unexpected catalog search error");
+        }
+        return reply.code(502).send({ error: "Catalog provider unavailable" });
+      }
+    },
+  );
+
+  app.get<{ Params: { mediaType: string; id: string } }>(
+    "/catalog/:mediaType/:id",
+    async (request, reply) => {
+      const { mediaType, id: rawId } = request.params;
+      const id = Number(rawId);
+      if (
+        !["movie", "tv"].includes(mediaType) ||
+        !/^[1-9]\d*$/.test(rawId) ||
+        !Number.isSafeInteger(id)
+      ) {
+        return reply.code(400).send({ error: "Invalid catalog parameters" });
+      }
+      if (!getCatalogDetails) {
+        return reply.code(503).send({ error: "TMDB not configured" });
+      }
+      try {
+        return {
+          result: await getCatalogDetails(mediaType as CatalogMediaType, id),
+        };
+      } catch (error) {
+        if (error instanceof TmdbNotFoundError) {
+          return reply.code(404).send({ error: "Catalog title not found" });
+        }
+        if (!(error instanceof TmdbUnavailableError)) {
+          request.log.error({ err: error }, "Unexpected catalog details error");
         }
         return reply.code(502).send({ error: "Catalog provider unavailable" });
       }

@@ -1,6 +1,7 @@
 import { registerCatalogRoutes } from "./modules/catalog/catalog.routes.js";
 import type {
   GetTrendingMovies,
+  GetCatalogDetails,
   SearchCatalog,
 } from "./modules/catalog/tmdb.client.js";
 import Fastify, { type FastifyInstance } from "fastify";
@@ -18,6 +19,7 @@ export interface AppOptions {
   checkDatabase?: () => Promise<void>;
   getTrendingMovies?: GetTrendingMovies;
   searchCatalog?: SearchCatalog;
+  getCatalogDetails?: GetCatalogDetails;
   createUser?: CreateUser;
   findUserByEmail?: FindUserByEmail;
   createSession?: CreateSession;
@@ -36,7 +38,12 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     registerAuthRoutes(authApp, options);
   });
 
-  registerCatalogRoutes(app, options.getTrendingMovies, options.searchCatalog);
+  registerCatalogRoutes(
+    app,
+    options.getTrendingMovies,
+    options.searchCatalog,
+    options.getCatalogDetails,
+  );
 
   app.get("/health", async () => ({ status: "ok" }));
 
