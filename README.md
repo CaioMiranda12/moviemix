@@ -70,3 +70,10 @@ docs/
 - Sprint 1: catálogo e integração TMDB
 
 **Nota:** Este pacote é um scaffold inicial. Ainda não implementa autenticação, catálogo, playlists, persistência ou painel administrativo.
+
+## PostgreSQL + Docker Compose (S0-07)
+
+Veja [o guia Docker](docs/development/docker.md). Após aplicar o patch, execute `npm install` para atualizar o lockfile, depois `docker compose up --build -d`.
+
+- Liveness: `http://localhost:3333/health`
+- Readiness (PostgreSQL): `http://localhost:3333/health/ready`
