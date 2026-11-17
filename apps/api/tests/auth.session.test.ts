@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildApp } from "../src/app.js";
 import { hashSessionToken } from "../src/modules/auth/session.service.js";
 
@@ -23,6 +23,7 @@ function setup(expires = false) {
 }
 
 describe("Authenticated sessions", () => {
+  afterEach(() => vi.unstubAllEnvs());
   it("returns current user without exposing credentials", async () => {
     const app = setup();
     try {
@@ -96,6 +97,63 @@ describe("Authenticated sessions", () => {
         });
         expect(res.statusCode).toBe(403);
       }
+    } finally {
+      await app.close();
+    }
+  });
+  it("accepts the configured HTTPS frontend origin behind a proxy", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("PUBLIC_APP_ORIGIN", "https://moviemix.vercel.app");
+    const app = setup();
+    try {
+      const res = await app.inject({
+        method: "POST",
+        url: "/auth/logout",
+        headers: {
+          cookie,
+          origin: "https://moviemix.vercel.app",
+          host: "moviemix-api.onrender.com",
+          "x-forwarded-host": "attacker.example",
+          "x-forwarded-proto": "http",
+        },
+      });
+      expect(res.statusCode).toBe(204);
+      expect(res.headers["set-cookie"]).toContain("Secure");
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("rejects other origins, HTTP, and missing configuration in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("PUBLIC_APP_ORIGIN", "https://moviemix.vercel.app");
+    const app = setup();
+    try {
+      for (const origin of [
+        "https://evil.example",
+        "http://moviemix.vercel.app",
+        "https://moviemix.vercel.app.evil.example",
+        "https://moviemix.vercel.app/path",
+        undefined,
+      ]) {
+        const res = await app.inject({
+          method: "POST",
+          url: "/auth/logout",
+          headers: {
+            cookie,
+            host: "moviemix-api.onrender.com",
+            ...(origin ? { origin } : {}),
+          },
+        });
+        expect(res.statusCode).toBe(403);
+      }
+      vi.stubEnv("PUBLIC_APP_ORIGIN", "");
+      const missing = await app.inject({
+        method: "POST",
+        url: "/auth/logout",
+        headers: { cookie, origin: "https://moviemix.vercel.app" },
+      });
+      expect(missing.statusCode).toBe(403);
     } finally {
       await app.close();
     }

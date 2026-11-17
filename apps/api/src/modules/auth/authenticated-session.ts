@@ -36,30 +36,59 @@ export function makeRequireAuth(findSessionUser: FindSessionUser) {
   };
 }
 
+/**
+ * State-changing requests must originate from the public frontend.
+ * Never trust X-Forwarded-Host or X-Forwarded-Proto sent by a client.
+ */
 export function isSameOrigin(request: FastifyRequest): boolean {
   const origin = request.headers.origin;
-  const host = request.headers.host;
-
-  if (!origin || !host) {
-    return false;
-  }
+  if (!origin) return false;
 
   try {
     const parsedOrigin = new URL(origin);
-    const requestOrigin = new URL(`${request.protocol}://${host}`);
-
-    if (!["http:", "https:"].includes(parsedOrigin.protocol)) {
-      return false;
-    }
-
     if (
-      process.env.NODE_ENV === "production" &&
-      parsedOrigin.protocol !== "https:"
+      !["http:", "https:"].includes(parsedOrigin.protocol) ||
+      parsedOrigin.username ||
+      parsedOrigin.password ||
+      parsedOrigin.pathname !== "/" ||
+      parsedOrigin.search ||
+      parsedOrigin.hash
     ) {
       return false;
     }
 
-    return parsedOrigin.origin === requestOrigin.origin;
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction && parsedOrigin.protocol !== "https:") return false;
+
+    const configuredOrigin = process.env.PUBLIC_APP_ORIGIN;
+    if (configuredOrigin) {
+      const publicUrl = new URL(configuredOrigin);
+      if (
+        !["http:", "https:"].includes(publicUrl.protocol) ||
+        (isProduction && publicUrl.protocol !== "https:") ||
+        publicUrl.username ||
+        publicUrl.password ||
+        publicUrl.pathname !== "/" ||
+        publicUrl.search ||
+        publicUrl.hash ||
+        publicUrl.origin !== configuredOrigin
+      ) {
+        return false;
+      }
+      return parsedOrigin.origin === publicUrl.origin;
+    }
+
+    // Production fails closed if the public origin has not been configured.
+    if (isProduction) return false;
+
+    // Local development keeps its existing host-based behavior.
+    // Fastify inject() may not reflect the protocol supplied in Origin.
+    const host = request.headers.host;
+    if (!host) return false;
+
+    const expectedOrigin = new URL(`${parsedOrigin.protocol}//${host}`);
+
+    return parsedOrigin.origin === expectedOrigin.origin;
   } catch {
     return false;
   }
