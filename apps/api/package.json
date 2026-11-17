@@ -12,7 +12,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.10",
