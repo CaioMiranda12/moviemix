@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   catalogApi,
   type CatalogItem,
@@ -20,29 +21,35 @@ function MovieCard({ item }: { item: CatalogItem }) {
 
   return (
     <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-      <div className="aspect-[2/3] bg-zinc-800">
-        {posterUrl ? (
-          <img
-            src={posterUrl}
-            alt={`Pôster de ${item.title}`}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center p-4 text-center text-sm text-zinc-400">
-            Pôster indisponível
-          </div>
-        )}
-      </div>
-      <div className="space-y-2 p-4">
-        <h3 className="line-clamp-2 font-semibold">{item.title}</h3>
-        <p className="text-xs text-zinc-400">
-          {year || "Data não informada"} · Nota {item.voteAverage.toFixed(1)}
-        </p>
-        <p className="line-clamp-3 text-sm text-zinc-400">
-          {item.overview || "Sinopse indisponível."}
-        </p>
-      </div>
+      <Link
+        to={`/${item.mediaType ?? "movie"}/${item.id}`}
+        className="block h-full hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-emerald-400"
+        aria-label={`Ver detalhes de ${item.title}`}
+      >
+        <div className="aspect-[2/3] bg-zinc-800">
+          {posterUrl ? (
+            <img
+              src={posterUrl}
+              alt={`Pôster de ${item.title}`}
+              loading="lazy"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center p-4 text-center text-sm text-zinc-400">
+              Pôster indisponível
+            </div>
+          )}
+        </div>
+        <div className="space-y-2 p-4">
+          <h3 className="line-clamp-2 font-semibold">{item.title}</h3>
+          <p className="text-xs text-zinc-400">
+            {year || "Data não informada"} · Nota {item.voteAverage.toFixed(1)}
+          </p>
+          <p className="line-clamp-3 text-sm text-zinc-400">
+            {item.overview || "Sinopse indisponível."}
+          </p>
+        </div>
+      </Link>
     </article>
   );
 }
