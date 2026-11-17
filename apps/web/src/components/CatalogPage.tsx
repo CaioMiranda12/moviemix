@@ -117,14 +117,22 @@ export function CatalogPage({
           <p className="text-2xl font-bold text-emerald-400">MovieMix</p>
           <p className="mt-1 text-xs text-zinc-400">Conectado como {email}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => void onLogout()}
-          disabled={loggingOut}
-          className="rounded-xl border border-white/15 px-4 py-2 text-sm font-medium hover:bg-white/10 disabled:opacity-60"
-        >
-          {loggingOut ? "Saindo..." : "Sair"}
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/my-list"
+            className="rounded-xl border border-emerald-400/50 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-white/10"
+          >
+            ♥ Minha Lista
+          </Link>
+          <button
+            type="button"
+            onClick={() => void onLogout()}
+            disabled={loggingOut}
+            className="rounded-xl border border-white/15 px-4 py-2 text-sm font-medium hover:bg-white/10 disabled:opacity-60"
+          >
+            {loggingOut ? "Saindo..." : "Sair"}
+          </button>
+        </div>
       </header>
 
       {logoutError && (

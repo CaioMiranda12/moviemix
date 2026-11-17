@@ -1,3 +1,5 @@
+import { registerFavoritesRoutes } from "./modules/favorites/favorites.routes.js";
+import type { FavoritesRepository } from "./modules/favorites/favorites.repository.js";
 import { registerCatalogRoutes } from "./modules/catalog/catalog.routes.js";
 import type {
   GetTrendingMovies,
@@ -25,6 +27,7 @@ export interface AppOptions {
   createSession?: CreateSession;
   findSessionUser?: FindSessionUser;
   revokeSession?: RevokeSession;
+  favoritesRepository?: FavoritesRepository;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -42,6 +45,13 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     app,
     options.getTrendingMovies,
     options.searchCatalog,
+    options.getCatalogDetails,
+  );
+
+  registerFavoritesRoutes(
+    app,
+    options.findSessionUser,
+    options.favoritesRepository,
     options.getCatalogDetails,
   );
 
