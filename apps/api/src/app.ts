@@ -1,3 +1,5 @@
+import { registerProfileStatsRoutes } from "./modules/profile/profile-stats.routes.js";
+import type { ProfileStatsRepository } from "./modules/profile/profile-stats.repository.js";
 import { registerRatingsRoutes } from "./modules/ratings/ratings.routes.js";
 import type { RatingsRepository } from "./modules/ratings/ratings.repository.js";
 import { registerWatchStatusRoutes } from "./modules/watch-status/watch-status.routes.js";
@@ -34,6 +36,7 @@ export interface AppOptions {
   favoritesRepository?: FavoritesRepository;
   watchStatusRepository?: WatchStatusRepository;
   ratingsRepository?: RatingsRepository;
+  profileStatsRepository?: ProfileStatsRepository;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -73,6 +76,12 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     options.findSessionUser,
     options.ratingsRepository,
     options.getCatalogDetails,
+  );
+
+  registerProfileStatsRoutes(
+    app,
+    options.findSessionUser,
+    options.profileStatsRepository,
   );
 
   app.get("/health", async () => ({ status: "ok" }));
