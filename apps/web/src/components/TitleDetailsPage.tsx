@@ -1,3 +1,4 @@
+import { RatingControl } from "./RatingControl";
 import { WatchStatusControl } from "./WatchStatusControl";
 import { FavoriteButton } from "./FavoriteButton";
 import { useEffect, useState } from "react";
@@ -134,6 +135,7 @@ export function TitleDetailsPage() {
                 </div>
               )}
               <FavoriteButton mediaType={details.mediaType} id={details.id} />
+              <RatingControl mediaType={details.mediaType} id={details.id} />
               <WatchStatusControl
                 mediaType={details.mediaType}
                 id={details.id}

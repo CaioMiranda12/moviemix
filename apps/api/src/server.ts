@@ -1,3 +1,4 @@
+import { makeRatingsRepository } from "./modules/ratings/ratings.repository.js";
 import { makeWatchStatusRepository } from "./modules/watch-status/watch-status.repository.js";
 import { makeFavoritesRepository } from "./modules/favorites/favorites.repository.js";
 import "dotenv/config";
@@ -35,6 +36,7 @@ const app = buildApp({
   revokeSession: db ? makeRevokeSession(db) : undefined,
   favoritesRepository: db ? makeFavoritesRepository(db) : undefined,
   watchStatusRepository: db ? makeWatchStatusRepository(db) : undefined,
+  ratingsRepository: db ? makeRatingsRepository(db) : undefined,
   checkDatabase: pool
     ? async () => {
         await pool.query("SELECT 1");
