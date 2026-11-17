@@ -1,11 +1,16 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import { registerAuthRoutes } from "./modules/auth/auth.routes.js";
+import { type CreateUser } from "./modules/auth/auth.repository.js";
 
 export interface AppOptions {
   checkDatabase?: () => Promise<void>;
+  createUser?: CreateUser;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
   const app = Fastify({ logger: true });
+
+  if (options.createUser) registerAuthRoutes(app, options.createUser);
 
   app.get("/health", async () => ({ status: "ok" }));
 

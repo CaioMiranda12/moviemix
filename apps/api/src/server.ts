@@ -1,10 +1,13 @@
 import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { makeCreateUser } from "./modules/auth/auth.repository.js";
 import { buildApp } from "./app.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
 
 const app = buildApp({
+  createUser: pool ? makeCreateUser(drizzle(pool)) : undefined,
   checkDatabase: pool
     ? async () => {
         await pool.query("SELECT 1");
