@@ -1,0 +1,222 @@
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  catalogApi,
+  type CatalogItem,
+  type MediaType,
+} from "../lib/catalog-api";
+
+type CatalogPageProps = {
+  email: string;
+  onLogout: () => Promise<void>;
+  loggingOut: boolean;
+  logoutError: string;
+};
+
+function MovieCard({ item }: { item: CatalogItem }) {
+  const posterUrl = item.posterPath
+    ? `https://image.tmdb.org/t/p/w342${item.posterPath}`
+    : null;
+  const year = item.releaseDate?.slice(0, 4);
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+      <div className="aspect-[2/3] bg-zinc-800">
+        {posterUrl ? (
+          <img
+            src={posterUrl}
+            alt={`Pôster de ${item.title}`}
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center p-4 text-center text-sm text-zinc-400">
+            Pôster indisponível
+          </div>
+        )}
+      </div>
+      <div className="space-y-2 p-4">
+        <h3 className="line-clamp-2 font-semibold">{item.title}</h3>
+        <p className="text-xs text-zinc-400">
+          {year || "Data não informada"} · Nota {item.voteAverage.toFixed(1)}
+        </p>
+        <p className="line-clamp-3 text-sm text-zinc-400">
+          {item.overview || "Sinopse indisponível."}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+export function CatalogPage({
+  email,
+  onLogout,
+  loggingOut,
+  logoutError,
+}: CatalogPageProps) {
+  const [query, setQuery] = useState("");
+  const [mediaType, setMediaType] = useState<MediaType>("movie");
+  const [search, setSearch] = useState<{
+    query: string;
+    type: MediaType;
+  } | null>(null);
+  const [items, setItems] = useState<CatalogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError("");
+
+    const request = search
+      ? catalogApi.search(search.query, search.type)
+      : catalogApi.trending();
+
+    request
+      .then((results) => {
+        if (active) setItems(results);
+      })
+      .catch(() => {
+        if (active) {
+          setItems([]);
+          setError("Não foi possível carregar o catálogo. Tente novamente.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [search]);
+
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = query.trim();
+    if (trimmed.length < 2 || trimmed.length > 100) return;
+    setSearch({ query: trimmed, type: mediaType });
+  }
+
+  function showTrending() {
+    setQuery("");
+    setSearch(null);
+  }
+
+  return (
+    <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 sm:px-8">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+        <div>
+          <p className="text-2xl font-bold text-emerald-400">MovieMix</p>
+          <p className="mt-1 text-xs text-zinc-400">Conectado como {email}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void onLogout()}
+          disabled={loggingOut}
+          className="rounded-xl border border-white/15 px-4 py-2 text-sm font-medium hover:bg-white/10 disabled:opacity-60"
+        >
+          {loggingOut ? "Saindo..." : "Sair"}
+        </button>
+      </header>
+
+      {logoutError && (
+        <p role="alert" className="mt-4 text-sm text-red-400">
+          {logoutError}
+        </p>
+      )}
+
+      <section className="py-10">
+        <h1 className="text-3xl font-bold sm:text-4xl">
+          Descubra sua próxima história
+        </h1>
+        <p className="mt-3 text-zinc-400">
+          Explore filmes em alta ou busque filmes e séries.
+        </p>
+
+        <form
+          onSubmit={handleSearch}
+          className="mt-7 flex flex-col gap-3 sm:flex-row"
+        >
+          <label htmlFor="catalog-query" className="sr-only">
+            Buscar título
+          </label>
+          <input
+            id="catalog-query"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            minLength={2}
+            maxLength={100}
+            required
+            placeholder="Buscar filmes ou séries..."
+            className="min-w-0 flex-1 rounded-xl border border-white/15 bg-zinc-900 px-4 py-3 outline-none focus:border-emerald-400"
+          />
+          <label htmlFor="catalog-type" className="sr-only">
+            Tipo de conteúdo
+          </label>
+          <select
+            id="catalog-type"
+            value={mediaType}
+            onChange={(event) => setMediaType(event.target.value as MediaType)}
+            className="rounded-xl border border-white/15 bg-zinc-900 px-4 py-3"
+          >
+            <option value="movie">Filmes</option>
+            <option value="tv">Séries</option>
+          </select>
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-zinc-950 hover:bg-emerald-400 disabled:opacity-60"
+          >
+            Buscar
+          </button>
+        </form>
+      </section>
+
+      <section aria-live="polite" className="pb-16">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-bold sm:text-2xl">
+            {search
+              ? `Resultados para “${search.query}”`
+              : "Filmes em alta na semana"}
+          </h2>
+          {search && (
+            <button
+              type="button"
+              onClick={showTrending}
+              className="text-sm font-medium text-emerald-400 hover:underline"
+            >
+              Voltar aos destaques
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <p role="status" className="text-zinc-400">
+            Carregando catálogo...
+          </p>
+        ) : error ? (
+          <p role="alert" className="text-red-400">
+            {error}
+          </p>
+        ) : items.length === 0 ? (
+          <p className="text-zinc-400">Nenhum resultado encontrado.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {items.map((item) => (
+              <MovieCard
+                key={`${item.mediaType ?? "movie"}-${item.id}`}
+                item={item}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+      <footer className="border-t border-white/10 py-6 text-center text-xs text-zinc-500">
+        Dados fornecidos por TMDB. Este produto não é endossado ou certificado
+        pela TMDB.
+      </footer>
+    </main>
+  );
+}

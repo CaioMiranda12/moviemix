@@ -1,3 +1,8 @@
+import { registerCatalogRoutes } from "./modules/catalog/catalog.routes.js";
+import type {
+  GetTrendingMovies,
+  SearchCatalog,
+} from "./modules/catalog/tmdb.client.js";
 import Fastify, { type FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import { registerAuthRoutes } from "./modules/auth/auth.routes.js";
@@ -11,6 +16,8 @@ import { type CreateUser } from "./modules/auth/auth.repository.js";
 
 export interface AppOptions {
   checkDatabase?: () => Promise<void>;
+  getTrendingMovies?: GetTrendingMovies;
+  searchCatalog?: SearchCatalog;
   createUser?: CreateUser;
   findUserByEmail?: FindUserByEmail;
   createSession?: CreateSession;
@@ -28,6 +35,8 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
 
     registerAuthRoutes(authApp, options);
   });
+
+  registerCatalogRoutes(app, options.getTrendingMovies, options.searchCatalog);
 
   app.get("/health", async () => ({ status: "ok" }));
 
