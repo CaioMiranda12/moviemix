@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { LoginForm } from "./components/LoginForm";
 import { CatalogPage } from "./components/CatalogPage";
+import { WatchStatusPage } from "./components/WatchStatusPage";
 import { FavoritesPage } from "./components/FavoritesPage";
 import { TitleDetailsPage } from "./components/TitleDetailsPage";
 import { RegisterForm } from "./components/RegisterForm";
@@ -108,6 +109,11 @@ function AppRoutes() {
       <Route
         path="/my-list"
         element={user ? <FavoritesPage /> : <Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/watching"
+        element={user ? <WatchStatusPage /> : <Navigate to="/login" replace />}
       />
 
       <Route
