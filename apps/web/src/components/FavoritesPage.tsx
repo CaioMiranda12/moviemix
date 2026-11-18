@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { favoritesApi, type FavoriteItem } from "../lib/favorites-api";
+import { ratingsApi } from "../lib/ratings-api";
 
 export function FavoritesPage() {
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scores, setScores] = useState<Record<string, number>>({});
   const [removing, setRemoving] = useState("");
   const [error, setError] = useState("");
 
@@ -25,6 +27,29 @@ export function FavoritesPage() {
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    ratingsApi
+      .list()
+      .then((results) => {
+        if (!active) return;
+        setScores(
+          Object.fromEntries(
+            results.map((rating) => [
+              `${rating.mediaType}-${rating.id}`,
+              rating.score,
+            ]),
+          ),
+        );
+      })
+      .catch(() => {
+        // Uma falha ao carregar as notas não deve impedir o acesso aos favoritos.
       });
     return () => {
       active = false;
@@ -121,6 +146,14 @@ export function FavoritesPage() {
                       {item.mediaType === "movie" ? "Filme" : "Série"} ·{" "}
                       {item.releaseDate?.slice(0, 4) || "Sem data"}
                     </p>
+                    {scores[`${item.mediaType}-${item.id}`] != null && (
+                      <p
+                        className="mt-2 text-sm font-medium text-amber-400"
+                        aria-label={`Sua avaliação: ${scores[`${item.mediaType}-${item.id}`]} de 5 estrelas`}
+                      >
+                        ★ {scores[`${item.mediaType}-${item.id}`]}/5
+                      </p>
+                    )}
                   </div>
                 </Link>
                 <div className="px-4 pb-4">
