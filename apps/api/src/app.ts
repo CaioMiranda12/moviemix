@@ -11,6 +11,7 @@ import type {
   GetTrendingMovies,
   GetCatalogDetails,
   SearchCatalog,
+  DiscoverByGenre,
 } from "./modules/catalog/tmdb.client.js";
 import Fastify, { type FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
@@ -28,6 +29,7 @@ export interface AppOptions {
   getTrendingMovies?: GetTrendingMovies;
   searchCatalog?: SearchCatalog;
   getCatalogDetails?: GetCatalogDetails;
+  discoverByGenre?: DiscoverByGenre;
   createUser?: CreateUser;
   findUserByEmail?: FindUserByEmail;
   createSession?: CreateSession;
@@ -55,6 +57,7 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     options.getTrendingMovies,
     options.searchCatalog,
     options.getCatalogDetails,
+    options.discoverByGenre,
   );
 
   registerFavoritesRoutes(

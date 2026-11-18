@@ -6,6 +6,7 @@ import {
   type GetTrendingMovies,
   type SearchCatalog,
   type CatalogMediaType,
+  type DiscoverByGenre,
 } from "./tmdb.client.js";
 
 export function registerCatalogRoutes(
@@ -13,6 +14,7 @@ export function registerCatalogRoutes(
   getTrendingMovies?: GetTrendingMovies,
   searchCatalog?: SearchCatalog,
   getCatalogDetails?: GetCatalogDetails,
+  discoverByGenre?: DiscoverByGenre,
 ): void {
   app.get("/catalog/trending", async (request, reply) => {
     if (!getTrendingMovies) {
@@ -53,6 +55,41 @@ export function registerCatalogRoutes(
         if (!(error instanceof TmdbUnavailableError)) {
           request.log.error({ err: error }, "Unexpected catalog search error");
         }
+        return reply.code(502).send({ error: "Catalog provider unavailable" });
+      }
+    },
+  );
+
+  app.get<{ Querystring: { type?: string; genre?: string } }>(
+    "/catalog/discover",
+    async (request, reply) => {
+      const { type = "movie", genre } = request.query;
+      const allowed =
+        type === "movie"
+          ? [
+              28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749,
+              878, 10770, 53, 10752, 37,
+            ]
+          : [
+              10759, 16, 35, 80, 99, 18, 10751, 10762, 9648, 10763, 10764,
+              10765, 10766, 10767, 10768, 37,
+            ];
+      const genreId = Number(genre);
+      if (!genre || !/^\d+$/.test(genre) || !allowed.includes(genreId)) {
+        return reply.code(400).send({ error: "Invalid discover parameters" });
+      }
+      if (!discoverByGenre)
+        return reply.code(503).send({ error: "TMDB not configured" });
+      try {
+        return {
+          results: await discoverByGenre(type as CatalogMediaType, genreId),
+        };
+      } catch (error) {
+        if (!(error instanceof TmdbUnavailableError))
+          request.log.error(
+            { err: error },
+            "Unexpected catalog discover error",
+          );
         return reply.code(502).send({ error: "Catalog provider unavailable" });
       }
     },

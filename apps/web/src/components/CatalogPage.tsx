@@ -6,6 +6,30 @@ import {
   type MediaType,
 } from "../lib/catalog-api";
 
+const GENRES: Record<MediaType, { id: number; name: string }[]> = {
+  movie: [
+    { id: 28, name: "Ação" },
+    { id: 12, name: "Aventura" },
+    { id: 35, name: "Comédia" },
+    { id: 18, name: "Drama" },
+    { id: 27, name: "Terror" },
+    { id: 878, name: "Ficção científica" },
+    { id: 16, name: "Animação" },
+    { id: 53, name: "Suspense" },
+    { id: 10749, name: "Romance" },
+  ],
+  tv: [
+    { id: 10759, name: "Ação e aventura" },
+    { id: 35, name: "Comédia" },
+    { id: 18, name: "Drama" },
+    { id: 80, name: "Crime" },
+    { id: 9648, name: "Mistério" },
+    { id: 10765, name: "Ficção científica e fantasia" },
+    { id: 16, name: "Animação" },
+    { id: 99, name: "Documentário" },
+  ],
+};
+
 type CatalogPageProps = {
   email: string;
   onLogout: () => Promise<void>;
@@ -66,6 +90,11 @@ export function CatalogPage({
     query: string;
     type: MediaType;
   } | null>(null);
+  const [discovery, setDiscovery] = useState<{
+    type: MediaType;
+    genreId: number;
+    genreName: string;
+  } | null>(null);
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -76,9 +105,11 @@ export function CatalogPage({
     setLoading(true);
     setError("");
 
-    const request = search
-      ? catalogApi.search(search.query, search.type)
-      : catalogApi.trending();
+    const request = discovery
+      ? catalogApi.discover(discovery.type, discovery.genreId)
+      : search
+        ? catalogApi.search(search.query, search.type)
+        : catalogApi.trending();
 
     request
       .then((results) => {
@@ -97,18 +128,27 @@ export function CatalogPage({
     return () => {
       active = false;
     };
-  }, [search, retry]);
+  }, [search, discovery, retry]);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = query.trim();
     if (trimmed.length < 2 || trimmed.length > 100) return;
+    if (
+      !discovery &&
+      search?.query === trimmed &&
+      search.type === mediaType &&
+      !error
+    )
+      return;
+    setDiscovery(null);
     setSearch({ query: trimmed, type: mediaType });
   }
 
   function showTrending() {
     setQuery("");
     setSearch(null);
+    setDiscovery(null);
   }
 
   return (
@@ -212,16 +252,51 @@ export function CatalogPage({
             Buscar
           </button>
         </form>
+        <div className="mt-8 space-y-3" aria-label="Explorar por gênero">
+          <h2 className="text-lg font-semibold">Explorar por gênero</h2>
+          <p className="text-sm text-zinc-400">
+            Selecione um gênero para descobrir novos títulos.
+          </p>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Gêneros disponíveis"
+          >
+            {GENRES[mediaType].map((genre) => (
+              <button
+                key={`${mediaType}-${genre.id}`}
+                type="button"
+                aria-pressed={
+                  discovery?.type === mediaType &&
+                  discovery.genreId === genre.id
+                }
+                onClick={() => {
+                  setSearch(null);
+                  setDiscovery({
+                    type: mediaType,
+                    genreId: genre.id,
+                    genreName: genre.name,
+                  });
+                }}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${discovery?.type === mediaType && discovery.genreId === genre.id ? "border-emerald-400 bg-emerald-500 text-zinc-950" : "border-white/20 text-zinc-200 hover:bg-white/10"}`}
+              >
+                {genre.name}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section aria-live="polite" className="pb-16">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold sm:text-2xl">
-            {search
-              ? `Resultados para “${search.query}”`
-              : "Filmes em alta na semana"}
+            {discovery
+              ? `${discovery.type === "movie" ? "Filmes" : "Séries"} · ${discovery.genreName}`
+              : search
+                ? `Resultados para “${search.query}”`
+                : "Filmes em alta na semana"}
           </h2>
-          {search && (
+          {(search || discovery) && (
             <button
               type="button"
               onClick={showTrending}

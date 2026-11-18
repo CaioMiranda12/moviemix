@@ -17,9 +17,13 @@ import {
   makeSearchCatalog,
   makeGetCatalogDetails,
   makeGetTrendingMovies,
+  makeDiscoverByGenre,
 } from "./modules/catalog/tmdb.client.js";
 
-import { cacheCatalogProviders } from "./modules/catalog/catalog-cache.js";
+import {
+  makeCatalogCache,
+  cacheCatalogProviders,
+} from "./modules/catalog/catalog-cache.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
@@ -36,7 +40,18 @@ const catalog = tmdbToken
     })
   : undefined;
 
+const discoveryCache = makeCatalogCache();
+const discoverByGenre = tmdbToken ? makeDiscoverByGenre(tmdbToken) : undefined;
+
 const app = buildApp({
+  discoverByGenre: discoverByGenre
+    ? (type, genre) =>
+        discoveryCache.get(
+          JSON.stringify(["discover", type, genre]),
+          10 * 60_000,
+          () => discoverByGenre(type, genre),
+        )
+    : undefined,
   getTrendingMovies: catalog?.getTrendingMovies,
   searchCatalog: catalog?.searchCatalog,
   getCatalogDetails: catalog?.getCatalogDetails,
