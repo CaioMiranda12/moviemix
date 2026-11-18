@@ -67,6 +67,31 @@ describe("POST /auth/register", () => {
     }
   });
 
+  it("limits repeated registration attempts without login dependencies", async () => {
+    const createUser: CreateUser = async () => {
+      throw new Error("Registration should not be attempted for invalid input");
+    };
+    const app = buildApp({ createUser });
+    try {
+      const responses = [];
+      for (let i = 0; i < 6; i++) {
+        responses.push(
+          await app.inject({
+            method: "POST",
+            url: "/auth/register",
+            payload: { email: "invalid", password: "short" },
+          }),
+        );
+      }
+      expect(
+        responses.slice(0, 5).every((response) => response.statusCode === 400),
+      ).toBe(true);
+      expect(responses[5]?.statusCode).toBe(429);
+    } finally {
+      await app.close();
+    }
+  });
+
   it("returns 409 on the database unique constraint", async () => {
     const app = buildApp({
       createUser: async () => {

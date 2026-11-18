@@ -34,7 +34,10 @@ export function registerAuthRoutes(
     const register = makeRegisterUser(dependencies.createUser);
     app.post(
       "/auth/register",
-      { bodyLimit: 16_384 },
+      {
+        bodyLimit: 16_384,
+        config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+      },
       async (request, reply) => {
         try {
           const input = registerSchema.parse(request.body);
