@@ -33,11 +33,11 @@
 
 O MovieMix está publicado utilizando serviços com planos gratuitos:
 
-| Serviço | Plataforma | Responsabilidade |
-| --- | --- | --- |
-| Frontend | Vercel Hobby | Aplicação React/Vite |
-| Backend | Render Free | API Fastify |
-| Banco de dados | Neon Free | PostgreSQL |
+| Serviço        | Plataforma   | Responsabilidade     |
+| -------------- | ------------ | -------------------- |
+| Frontend       | Vercel Hobby | Aplicação React/Vite |
+| Backend        | Render Free  | API Fastify          |
+| Banco de dados | Neon Free    | PostgreSQL           |
 
 O frontend utiliza o proxy `/api` da Vercel para encaminhar requisições ao backend no Render.
 
