@@ -235,3 +235,53 @@ export function makeGetCatalogDetails(
     }
   };
 }
+
+export type DiscoverByGenre = (
+  mediaType: CatalogMediaType,
+  genreId: number,
+) => Promise<CatalogSearchResult[]>;
+
+export function makeDiscoverByGenre(
+  token: string,
+  fetcher: typeof fetch = fetch,
+): DiscoverByGenre {
+  return async (mediaType, genreId) => {
+    const url = new URL(`https://api.themoviedb.org/3/discover/${mediaType}`);
+    url.searchParams.set("language", "pt-BR");
+    url.searchParams.set("with_genres", String(genreId));
+    url.searchParams.set("sort_by", "popularity.desc");
+    url.searchParams.set("include_adult", "false");
+    let response: Response;
+    try {
+      response = await fetcher(url.toString(), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch {
+      throw new TmdbUnavailableError();
+    }
+    if (!response.ok) throw new TmdbUnavailableError();
+    try {
+      const payload = (await response.json()) as { results?: TmdbSearchItem[] };
+      if (!Array.isArray(payload.results))
+        throw new Error("Invalid TMDB response");
+      return payload.results.map((item) => ({
+        id: item.id,
+        mediaType,
+        title: mediaType === "movie" ? (item.title ?? "") : (item.name ?? ""),
+        overview: item.overview,
+        posterPath: item.poster_path,
+        releaseDate:
+          mediaType === "movie"
+            ? (item.release_date ?? "")
+            : (item.first_air_date ?? ""),
+        voteAverage: item.vote_average,
+      }));
+    } catch {
+      throw new TmdbUnavailableError();
+    }
+  };
+}

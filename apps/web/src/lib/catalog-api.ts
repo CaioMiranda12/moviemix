@@ -47,6 +47,10 @@ async function fetchCatalog(path: string): Promise<CatalogItem[]> {
 
 export const catalogApi = {
   trending: () => getCatalog("/trending"),
+  discover: (type: MediaType, genreId: number) =>
+    getCatalog(
+      `/discover?${new URLSearchParams({ type, genre: String(genreId) })}`,
+    ),
   search: (query: string, type: MediaType) => {
     const params = new URLSearchParams({ q: query, type });
     return getCatalog(`/search?${params.toString()}`);
