@@ -94,6 +94,7 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     app,
     options.findSessionUser,
     options.playlistsRepository,
+    options.getCatalogDetails,
   );
 
   registerProfileStatsRoutes(

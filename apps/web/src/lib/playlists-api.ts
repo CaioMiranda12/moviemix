@@ -1,3 +1,15 @@
+export type PlaylistItem = {
+  id: number;
+  mediaType: "movie" | "tv";
+  title: string;
+  overview: string;
+  posterPath: string | null;
+  releaseDate: string;
+  addedAt: string;
+};
+
+export type PlaylistDetails = { playlist: Playlist; items: PlaylistItem[] };
+
 export type Playlist = {
   id: string;
   name: string;
@@ -17,6 +29,7 @@ async function request(path: string, init?: RequestInit): Promise<unknown> {
   });
   if (response.status === 401)
     throw new Error("Sua sessão expirou. Entre novamente.");
+  if (response.status === 409) throw new Error("Este título já está na lista.");
   if (response.status === 404) throw new Error("Lista não encontrada.");
   if (!response.ok)
     throw new Error("Não foi possível concluir a operação. Tente novamente.");
@@ -36,6 +49,33 @@ function isPlaylist(value: unknown): value is Playlist {
 }
 
 export const playlistsApi = {
+  async get(id: string): Promise<PlaylistDetails> {
+    const result = (await request(
+      `/${encodeURIComponent(id)}`,
+    )) as PlaylistDetails;
+    if (!result || !isPlaylist(result.playlist) || !Array.isArray(result.items))
+      throw new Error("Resposta inválida da lista.");
+    return result;
+  },
+  async addItem(
+    id: string,
+    mediaType: "movie" | "tv",
+    mediaId: number,
+  ): Promise<void> {
+    await request(`/${encodeURIComponent(id)}/items`, {
+      method: "POST",
+      body: JSON.stringify({ mediaType, id: mediaId }),
+    });
+  },
+  async removeItem(
+    id: string,
+    mediaType: "movie" | "tv",
+    mediaId: number,
+  ): Promise<void> {
+    await request(`/${encodeURIComponent(id)}/items/${mediaType}/${mediaId}`, {
+      method: "DELETE",
+    });
+  },
   async list(): Promise<Playlist[]> {
     const result = await request("");
     if (

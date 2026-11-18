@@ -1,6 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { playlists } from "../../db/schema/index.js";
+import { media, playlistItems, playlists } from "../../db/schema/index.js";
 
 export type Playlist = {
   id: string;
@@ -10,7 +10,32 @@ export type Playlist = {
   updatedAt: Date;
 };
 
+export type PlaylistItem = {
+  id: number;
+  mediaType: "movie" | "tv";
+  title: string;
+  overview: string;
+  posterPath: string | null;
+  releaseDate: string;
+  addedAt: string;
+};
+
+export type PlaylistMedia = Omit<PlaylistItem, "addedAt">;
+
 export interface PlaylistsRepository {
+  get(userId: string, id: string): Promise<Playlist | null>;
+  items(userId: string, id: string): Promise<PlaylistItem[] | null>;
+  addItem(
+    userId: string,
+    id: string,
+    item: PlaylistMedia,
+  ): Promise<"added" | "duplicate" | "missing">;
+  removeItem(
+    userId: string,
+    id: string,
+    type: "movie" | "tv",
+    mediaId: number,
+  ): Promise<"removed" | "missing" | "not-found">;
   list(userId: string): Promise<Playlist[]>;
   create(userId: string, name: string): Promise<Playlist>;
   rename(userId: string, id: string, name: string): Promise<Playlist | null>;
@@ -27,7 +52,111 @@ export function makePlaylistsRepository(
     createdAt: playlists.createdAt,
     updatedAt: playlists.updatedAt,
   };
+  async function owned(userId: string, id: string) {
+    const [row] = await db
+      .select(columns)
+      .from(playlists)
+      .where(and(eq(playlists.ownerId, userId), eq(playlists.id, id)))
+      .limit(1);
+    return row ?? null;
+  }
   return {
+    get: owned,
+    async items(userId, id) {
+      if (!(await owned(userId, id))) return null;
+      const rows = await db
+        .select({
+          id: media.externalId,
+          mediaType: media.mediaType,
+          title: media.title,
+          overview: media.overview,
+          posterPath: media.posterPath,
+          releaseDate: media.releaseDate,
+          addedAt: playlistItems.addedAt,
+        })
+        .from(playlistItems)
+        .innerJoin(media, eq(media.id, playlistItems.mediaId))
+        .where(eq(playlistItems.playlistId, id))
+        .orderBy(playlistItems.position, playlistItems.addedAt);
+      return rows.map((row) => ({
+        id: row.id,
+        mediaType:
+          row.mediaType === "MOVIE" ? ("movie" as const) : ("tv" as const),
+        title: row.title,
+        overview: row.overview ?? "",
+        posterPath: row.posterPath,
+        releaseDate: row.releaseDate ?? "",
+        addedAt: row.addedAt.toISOString(),
+      }));
+    },
+    async addItem(userId, id, item) {
+      return db.transaction(async (tx) => {
+        // Lock the playlist row to serialize position allocation and deletion.
+        const [playlist] = await tx
+          .select({ id: playlists.id })
+          .from(playlists)
+          .where(and(eq(playlists.id, id), eq(playlists.ownerId, userId)))
+          .for("update")
+          .limit(1);
+        if (!playlist) return "missing" as const;
+        const [stored] = await tx
+          .insert(media)
+          .values({
+            provider: "TMDB",
+            externalId: item.id,
+            mediaType: item.mediaType === "movie" ? "MOVIE" : "TV",
+            title: item.title,
+            overview: item.overview,
+            posterPath: item.posterPath,
+            releaseDate: item.releaseDate || null,
+            metadataUpdatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [media.provider, media.mediaType, media.externalId],
+            set: {
+              title: item.title,
+              overview: item.overview,
+              posterPath: item.posterPath,
+              releaseDate: item.releaseDate || null,
+              metadataUpdatedAt: new Date(),
+            },
+          })
+          .returning({ id: media.id });
+        if (!stored) throw new Error("Media upsert failed");
+        const [last] = await tx
+          .select({
+            next: sql<number>`coalesce(max(${playlistItems.position}) + 1, 0)::int`,
+          })
+          .from(playlistItems)
+          .where(eq(playlistItems.playlistId, id));
+        const inserted = await tx
+          .insert(playlistItems)
+          .values({
+            playlistId: id,
+            mediaId: stored.id,
+            position: last?.next ?? 0,
+          })
+          .onConflictDoNothing()
+          .returning({ id: playlistItems.id });
+        return inserted.length ? ("added" as const) : ("duplicate" as const);
+      });
+    },
+    async removeItem(userId, id, type, mediaId) {
+      if (!(await owned(userId, id))) return "missing";
+      const deleted = await db
+        .delete(playlistItems)
+        .where(
+          and(
+            eq(playlistItems.playlistId, id),
+            eq(
+              playlistItems.mediaId,
+              sql`(select id from media where provider = 'TMDB' and media_type = ${type === "movie" ? "MOVIE" : "TV"} and external_id = ${mediaId})`,
+            ),
+          ),
+        )
+        .returning({ id: playlistItems.id });
+      return deleted.length ? "removed" : "not-found";
+    },
     async list(userId) {
       return db
         .select(columns)

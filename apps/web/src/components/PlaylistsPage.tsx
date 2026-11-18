@@ -116,8 +116,7 @@ export function PlaylistsPage() {
       </header>
       <h1 className="mb-2 text-3xl font-bold">Minhas listas</h1>
       <p className="mb-8 text-zinc-400">
-        Organize suas coleções pessoais. Adicionar filmes e séries estará
-        disponível na próxima sprint.
+        Organize suas coleções pessoais e adicione filmes e séries.
       </p>
       <form
         onSubmit={create}
@@ -218,12 +217,23 @@ export function PlaylistsPage() {
               ) : (
                 <>
                   <h2 className="break-words text-xl font-semibold">
-                    {item.name}
+                    <Link
+                      to={`/lists/${item.id}`}
+                      className="hover:text-emerald-400 focus-visible:outline-2 focus-visible:outline-emerald-400"
+                    >
+                      {item.name}
+                    </Link>
                   </h2>
                   <p className="mt-2 text-sm text-zinc-400">
-                    Lista privada · Sem títulos por enquanto
+                    Lista privada · Abra para visualizar os títulos
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3">
+                    <Link
+                      to={`/lists/${item.id}`}
+                      className="rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-zinc-950"
+                    >
+                      Abrir lista
+                    </Link>
                     <button
                       type="button"
                       className="rounded-lg border border-white/20 px-4 py-2 focus-visible:outline-2 focus-visible:outline-emerald-400"

@@ -21,6 +21,10 @@ const item = {
 
 function setup() {
   const repository: PlaylistsRepository = {
+    get: vi.fn(async () => item),
+    items: vi.fn(async () => []),
+    addItem: vi.fn(async () => "added" as const),
+    removeItem: vi.fn(async () => "removed" as const),
     list: vi.fn(async () => [item]),
     create: vi.fn(async (_user, name) => ({ ...item, name })),
     rename: vi.fn(async (_user, _id, name) => ({ ...item, name })),
@@ -32,6 +36,17 @@ function setup() {
         ? { id: userId, email: "user@example.com" }
         : null,
     playlistsRepository: repository,
+    getCatalogDetails: async (mediaType, id) => ({
+      id,
+      mediaType,
+      title: "Teste",
+      overview: "",
+      posterPath: null,
+      backdropPath: null,
+      releaseDate: "",
+      voteAverage: 8,
+      genres: [],
+    }),
   });
   return { app, repository };
 }
@@ -138,6 +153,84 @@ describe("Personal playlists", () => {
         })
       ).statusCode,
     ).toBe(404);
+    await app.close();
+  });
+});
+
+describe("Playlist items", () => {
+  it("requires authentication to open a playlist", async () => {
+    const { app } = setup();
+    const response = await app.inject({
+      method: "GET",
+      url: `/playlists/${playlistId}`,
+    });
+    expect(response.statusCode).toBe(401);
+    await app.close();
+  });
+  it("opens a list scoped to the signed-in user", async () => {
+    const { app, repository } = setup();
+    const response = await app.inject({
+      method: "GET",
+      url: `/playlists/${playlistId}`,
+      headers: { cookie },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(repository.get).toHaveBeenCalledWith(userId, playlistId);
+    expect(repository.items).toHaveBeenCalledWith(userId, playlistId);
+    await app.close();
+  });
+  it("rejects cross-origin additions", async () => {
+    const { app, repository } = setup();
+    const response = await app.inject({
+      method: "POST",
+      url: `/playlists/${playlistId}/items`,
+      headers: { cookie, origin: "https://evil.example" },
+      payload: { mediaType: "movie", id: 123 },
+    });
+    expect(response.statusCode).toBe(403);
+    expect(repository.addItem).not.toHaveBeenCalled();
+    await app.close();
+  });
+  it("adds a verified title and rejects duplicates", async () => {
+    const { app, repository } = setup();
+    const headers = { cookie, origin };
+    const url = `/playlists/${playlistId}/items`;
+    const response = await app.inject({
+      method: "POST",
+      url,
+      headers,
+      payload: { mediaType: "movie", id: 123 },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(repository.addItem).toHaveBeenCalledWith(
+      userId,
+      playlistId,
+      expect.objectContaining({ id: 123, title: "Teste" }),
+    );
+    vi.mocked(repository.addItem).mockResolvedValueOnce("duplicate");
+    const duplicate = await app.inject({
+      method: "POST",
+      url,
+      headers,
+      payload: { mediaType: "movie", id: 123 },
+    });
+    expect(duplicate.statusCode).toBe(409);
+    await app.close();
+  });
+  it("removes a title scoped to its owner", async () => {
+    const { app, repository } = setup();
+    const response = await app.inject({
+      method: "DELETE",
+      url: `/playlists/${playlistId}/items/tv/456`,
+      headers: { cookie, origin },
+    });
+    expect(response.statusCode).toBe(204);
+    expect(repository.removeItem).toHaveBeenCalledWith(
+      userId,
+      playlistId,
+      "tv",
+      456,
+    );
     await app.close();
   });
 });
