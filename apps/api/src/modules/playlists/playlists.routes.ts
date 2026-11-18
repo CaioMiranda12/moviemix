@@ -23,6 +23,61 @@ export function registerPlaylistsRoutes(
   if (!findSessionUser || !repository) return;
   const requireAuth = makeRequireAuth(findSessionUser);
 
+  // Public access is deliberately read-only and does not require a session.
+  app.get<{ Params: { id: string } }>(
+    "/playlists/public/:id",
+    async (request, reply) => {
+      const id = idSchema.safeParse(request.params.id);
+      if (!id.success)
+        return reply.code(400).send({ error: "Invalid playlist id" });
+      try {
+        const playlist = await repository.publicGet(id.data);
+        if (!playlist)
+          return reply.code(404).send({ error: "Playlist not found" });
+        const items = await repository.publicItems(id.data);
+        if (!items)
+          return reply.code(404).send({ error: "Playlist not found" });
+        reply.header("Cache-Control", "no-store");
+        return { playlist, items };
+      } catch (error) {
+        request.log.error({ err: error }, "Reading public playlist failed");
+        return reply.code(500).send({ error: "Internal server error" });
+      }
+    },
+  );
+
+  app.patch<{ Params: { id: string }; Body: unknown }>(
+    "/playlists/:id/visibility",
+    { bodyLimit: 1024 },
+    async (request, reply) => {
+      if (!isSameOrigin(request))
+        return reply.code(403).send({ error: "Forbidden" });
+      const user = await requireAuth(request, reply);
+      if (!user) return reply;
+      const id = idSchema.safeParse(request.params.id);
+      const body = z
+        .object({ visibility: z.enum(["PRIVATE", "PUBLIC"]) })
+        .strict()
+        .safeParse(request.body);
+      if (!id.success || !body.success)
+        return reply.code(400).send({ error: "Invalid visibility" });
+      try {
+        const updated = await repository.setVisibility(
+          user.id,
+          id.data,
+          body.data.visibility,
+        );
+        return updated ?? reply.code(404).send({ error: "Playlist not found" });
+      } catch (error) {
+        request.log.error(
+          { err: error },
+          "Updating playlist visibility failed",
+        );
+        return reply.code(500).send({ error: "Internal server error" });
+      }
+    },
+  );
+
   app.get("/playlists", async (request, reply) => {
     const user = await requireAuth(request, reply);
     if (!user) return reply;

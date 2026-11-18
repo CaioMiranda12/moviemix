@@ -1,3 +1,4 @@
+import { PublicPlaylistPage } from "./components/PublicPlaylistPage";
 import { PlaylistDetailsPage } from "./components/PlaylistDetailsPage";
 import { PlaylistsPage } from "./components/PlaylistsPage";
 import { useEffect, useState } from "react";
@@ -113,6 +114,7 @@ function AppRoutes() {
           }
         />
 
+        <Route path="/shared/lists/:id" element={<PublicPlaylistPage />} />
         <Route
           path="/lists"
           element={user ? <PlaylistsPage /> : <Navigate to="/login" replace />}

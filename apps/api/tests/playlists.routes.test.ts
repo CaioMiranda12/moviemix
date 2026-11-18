@@ -17,11 +17,18 @@ const item = {
   description: null,
   createdAt: new Date(),
   updatedAt: new Date(),
+  visibility: "PRIVATE" as const,
 };
 
 function setup() {
   const repository: PlaylistsRepository = {
     get: vi.fn(async () => item),
+    publicGet: vi.fn(async () => null),
+    publicItems: vi.fn(async () => null),
+    setVisibility: vi.fn(async (_user, _id, visibility) => ({
+      ...item,
+      visibility,
+    })),
     items: vi.fn(async () => []),
     addItem: vi.fn(async () => "added" as const),
     removeItem: vi.fn(async () => "removed" as const),
@@ -317,6 +324,73 @@ describe("Playlist manual ordering", () => {
       (await app.inject({ method: "PUT", url, headers, payload: valid }))
         .statusCode,
     ).toBe(404);
+    await app.close();
+  });
+});
+
+describe("Playlist sharing", () => {
+  it("keeps private lists inaccessible to anonymous visitors", async () => {
+    const { app } = setup();
+    const response = await app.inject({
+      method: "GET",
+      url: `/playlists/public/${playlistId}`,
+    });
+    expect(response.statusCode).toBe(404);
+    await app.close();
+  });
+  it("allows anonymous read access only when published", async () => {
+    const { app, repository } = setup();
+    vi.mocked(repository.publicGet).mockResolvedValueOnce({
+      ...item,
+      visibility: "PUBLIC",
+    });
+    vi.mocked(repository.publicItems).mockResolvedValueOnce([]);
+    const response = await app.inject({
+      method: "GET",
+      url: `/playlists/public/${playlistId}`,
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().items).toEqual([]);
+    await app.close();
+  });
+  it("requires authentication and same origin to publish", async () => {
+    const { app, repository } = setup();
+    const url = `/playlists/${playlistId}/visibility`;
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url,
+          headers: { origin },
+          payload: { visibility: "PUBLIC" },
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url,
+          headers: { cookie, origin: "https://evil.example" },
+          payload: { visibility: "PUBLIC" },
+        })
+      ).statusCode,
+    ).toBe(403);
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url,
+          headers: { cookie, origin },
+          payload: { visibility: "PUBLIC" },
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(repository.setVisibility).toHaveBeenCalledWith(
+      userId,
+      playlistId,
+      "PUBLIC",
+    );
     await app.close();
   });
 });
