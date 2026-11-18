@@ -47,6 +47,21 @@ async function fetchCatalog(path: string): Promise<CatalogItem[]> {
 
 export const catalogApi = {
   trending: () => getCatalog("/trending"),
+  filter: (filters: {
+    type: MediaType;
+    query?: string;
+    genre?: number;
+    year?: number;
+    minRating?: number;
+  }) => {
+    const params = new URLSearchParams({ type: filters.type });
+    if (filters.query) params.set("q", filters.query);
+    if (filters.genre !== undefined) params.set("genre", String(filters.genre));
+    if (filters.year !== undefined) params.set("year", String(filters.year));
+    if (filters.minRating !== undefined)
+      params.set("minRating", String(filters.minRating));
+    return getCatalog(`/filter?${params}`);
+  },
   discover: (type: MediaType, genreId: number) =>
     getCatalog(
       `/discover?${new URLSearchParams({ type, genre: String(genreId) })}`,

@@ -12,6 +12,7 @@ import type {
   GetCatalogDetails,
   SearchCatalog,
   DiscoverByGenre,
+  FilterCatalog,
 } from "./modules/catalog/tmdb.client.js";
 import Fastify, { type FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
@@ -30,6 +31,7 @@ export interface AppOptions {
   searchCatalog?: SearchCatalog;
   getCatalogDetails?: GetCatalogDetails;
   discoverByGenre?: DiscoverByGenre;
+  filterCatalog?: FilterCatalog;
   createUser?: CreateUser;
   findUserByEmail?: FindUserByEmail;
   createSession?: CreateSession;
@@ -58,6 +60,7 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     options.searchCatalog,
     options.getCatalogDetails,
     options.discoverByGenre,
+    options.filterCatalog,
   );
 
   registerFavoritesRoutes(
