@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ListSearch } from "./ListSearch";
+import { matchesListSearch } from "./list-search-utils";
 import {
   watchStatusApi,
   watchStatusLabels,
@@ -13,6 +15,7 @@ export function WatchStatusPage() {
   const [items, setItems] = useState<WatchStatusItem[]>([]);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
   const [removing, setRemoving] = useState("");
   const [error, setError] = useState("");
 
@@ -62,8 +65,11 @@ export function WatchStatusPage() {
     }
   }
 
-  const visible =
-    filter === "ALL" ? items : items.filter((item) => item.status === filter);
+  const visible = items.filter(
+    (item) =>
+      (filter === "ALL" || item.status === filter) &&
+      matchesListSearch(item.title, query),
+  );
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 sm:px-8">
@@ -80,6 +86,7 @@ export function WatchStatusPage() {
         <p className="mt-2 text-zinc-400">
           Organize o que deseja assistir, está assistindo ou já concluiu.
         </p>
+        <ListSearch value={query} onChange={setQuery} />
         <div
           className="mt-6 flex flex-wrap gap-2"
           aria-label="Filtrar por status"
@@ -112,7 +119,9 @@ export function WatchStatusPage() {
             <p className="text-zinc-400">
               {items.length === 0
                 ? "Você ainda não acompanha nenhum título."
-                : "Nenhum título neste status."}
+                : query.trim()
+                  ? "Nenhum título encontrado para sua busca."
+                  : "Nenhum título neste status."}
             </p>
             <Link
               to="/"
