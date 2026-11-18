@@ -1,8 +1,10 @@
+import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { playlistsApi, type Playlist } from "../lib/playlists-api";
 
 export function PlaylistsPage() {
+  const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [lists, setLists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -81,9 +83,11 @@ export function PlaylistsPage() {
   async function remove(item: Playlist) {
     if (
       busy ||
-      !window.confirm(
-        `Excluir a lista "${item.name}"? Esta ação não pode ser desfeita.`,
-      )
+      !(await confirmDelete(
+        "Excluir lista?",
+        `A lista "${item.name}" e seus títulos serão removidos. Esta ação não pode ser desfeita.`,
+        "Excluir lista",
+      ))
     )
       return;
     setBusy(true);
@@ -106,6 +110,7 @@ export function PlaylistsPage() {
     "rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-zinc-950 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-white";
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 pb-28 sm:py-8 sm:px-8 md:pb-8">
+      {confirmationDialog}
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
         <Link to="/" className="text-2xl font-bold text-emerald-400">
           MovieMix

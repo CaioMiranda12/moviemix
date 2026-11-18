@@ -1,3 +1,4 @@
+import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState } from "react";
 import type { MediaType } from "../lib/catalog-api";
 import { favoritesApi } from "../lib/favorites-api";
@@ -5,6 +6,7 @@ import { favoritesApi } from "../lib/favorites-api";
 type Props = { mediaType: MediaType; id: number };
 
 export function FavoriteButton({ mediaType, id }: Props) {
+  const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -35,6 +37,15 @@ export function FavoriteButton({ mediaType, id }: Props) {
 
   async function toggle() {
     if (busy || loading) return;
+    if (
+      saved &&
+      !(await confirmDelete(
+        "Remover dos favoritos?",
+        "Este título será removido da sua lista de favoritos.",
+        "Remover favorito",
+      ))
+    )
+      return;
     setBusy(true);
     setError("");
     try {
@@ -54,6 +65,7 @@ export function FavoriteButton({ mediaType, id }: Props) {
 
   return (
     <div className="mt-6">
+      {confirmationDialog}
       <button
         type="button"
         onClick={() => void toggle()}

@@ -1,3 +1,4 @@
+import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -12,6 +13,7 @@ import {
 } from "../lib/playlists-api";
 
 export function PlaylistDetailsPage() {
+  const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const { id } = useParams();
   const [data, setData] = useState<PlaylistDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,6 +194,17 @@ export function PlaylistDetailsPage() {
 
   async function remove(mediaType: MediaType, mediaId: number) {
     if (!id || busy || savingOrder) return;
+    const selected = data?.items.find(
+      (item) => item.id === mediaId && item.mediaType === mediaType,
+    );
+    if (
+      !(await confirmDelete(
+        "Remover título da lista?",
+        `Remover "${selected?.title ?? "este título"}" desta lista?`,
+        "Remover título",
+      ))
+    )
+      return;
     setBusy(true);
     setFeedback("");
     setError("");
@@ -209,6 +222,7 @@ export function PlaylistDetailsPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 pb-28 text-zinc-100 sm:px-8 sm:py-8 md:pb-8">
+      {confirmationDialog}
       <header className="mb-8 flex items-center justify-between border-b border-white/10 pb-6">
         <Link to="/lists" className="text-emerald-400 hover:underline">
           ← Minhas listas
