@@ -105,7 +105,7 @@ export function PlaylistsPage() {
   const button =
     "rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-zinc-950 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-white";
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-5 py-8 pb-28 sm:px-8 md:pb-8">
+    <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 pb-28 sm:py-8 sm:px-8 md:pb-8">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
         <Link to="/" className="text-2xl font-bold text-emerald-400">
           MovieMix
@@ -122,7 +122,7 @@ export function PlaylistsPage() {
         onSubmit={create}
         className="mb-8 flex flex-col gap-3 rounded-xl border border-white/10 bg-zinc-900/50 p-4 sm:flex-row sm:items-end"
       >
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <label htmlFor="playlist-name" className="mb-2 block font-medium">
             Nome da nova lista
           </label>
@@ -176,7 +176,7 @@ export function PlaylistsPage() {
           {lists.map((item) => (
             <li
               key={item.id}
-              className="rounded-xl border border-white/15 bg-zinc-900/60 p-5"
+              className="min-w-0 rounded-xl border border-white/15 bg-zinc-900/60 p-4 sm:p-5"
             >
               {editing === item.id ? (
                 <form
@@ -227,7 +227,7 @@ export function PlaylistsPage() {
                   <p className="mt-2 text-sm text-zinc-400">
                     Lista privada · Abra para visualizar os títulos
                   </p>
-                  <div className="mt-5 flex flex-wrap gap-3">
+                  <div className="mt-5 flex flex-wrap gap-2 sm:gap-3">
                     <Link
                       to={`/lists/${item.id}`}
                       className="rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-zinc-950"
