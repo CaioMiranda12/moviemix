@@ -1,3 +1,5 @@
+import { registerPlaylistsRoutes } from "./modules/playlists/playlists.routes.js";
+import type { PlaylistsRepository } from "./modules/playlists/playlists.repository.js";
 import { registerProfileStatsRoutes } from "./modules/profile/profile-stats.routes.js";
 import type { ProfileStatsRepository } from "./modules/profile/profile-stats.repository.js";
 import { registerRatingsRoutes } from "./modules/ratings/ratings.routes.js";
@@ -43,6 +45,7 @@ export interface AppOptions {
   watchStatusRepository?: WatchStatusRepository;
   ratingsRepository?: RatingsRepository;
   profileStatsRepository?: ProfileStatsRepository;
+  playlistsRepository?: PlaylistsRepository;
 }
 
 export function buildApp(options: AppOptions = {}): FastifyInstance {
@@ -85,6 +88,12 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
     options.findSessionUser,
     options.ratingsRepository,
     options.getCatalogDetails,
+  );
+
+  registerPlaylistsRoutes(
+    app,
+    options.findSessionUser,
+    options.playlistsRepository,
   );
 
   registerProfileStatsRoutes(

@@ -101,6 +101,12 @@ export function ProfilePage({ email }: { email: string }) {
         </Link>
       </header>
       <section className="py-10">
+        <Link
+          to="/lists"
+          className="mb-6 inline-block rounded-lg border border-emerald-500/40 px-4 py-3 text-emerald-400 hover:bg-emerald-500/10"
+        >
+          Minhas listas personalizadas →
+        </Link>
         <h1 className="text-3xl font-bold">Meu perfil</h1>
         <p className="mt-2 text-zinc-400">Resumo pessoal de {email}</p>
         {loading ? (

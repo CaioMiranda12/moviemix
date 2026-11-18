@@ -1,3 +1,4 @@
+import { makePlaylistsRepository } from "./modules/playlists/playlists.repository.js";
 import { makeProfileStatsRepository } from "./modules/profile/profile-stats.repository.js";
 import { makeRatingsRepository } from "./modules/ratings/ratings.repository.js";
 import { makeWatchStatusRepository } from "./modules/watch-status/watch-status.repository.js";
@@ -87,6 +88,7 @@ const app = buildApp({
   favoritesRepository: db ? makeFavoritesRepository(db) : undefined,
   watchStatusRepository: db ? makeWatchStatusRepository(db) : undefined,
   ratingsRepository: db ? makeRatingsRepository(db) : undefined,
+  playlistsRepository: db ? makePlaylistsRepository(db) : undefined,
   profileStatsRepository: db ? makeProfileStatsRepository(db) : undefined,
   checkDatabase: pool
     ? async () => {

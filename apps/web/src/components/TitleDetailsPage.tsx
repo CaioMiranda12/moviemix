@@ -55,7 +55,7 @@ export function TitleDetailsPage() {
     : null;
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 text-zinc-100 sm:px-8">
+    <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 pb-28 text-zinc-100 sm:px-8 md:pb-8">
       <header className="flex items-center justify-between border-b border-white/10 pb-6">
         <Link to="/" className="text-2xl font-bold text-emerald-400">
           MovieMix
