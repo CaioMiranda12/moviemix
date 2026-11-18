@@ -132,6 +132,50 @@ export function registerPlaylistsRoutes(
     },
   );
 
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    "/playlists/:id/items/order",
+    { bodyLimit: 16384 },
+    async (request, reply) => {
+      if (!isSameOrigin(request))
+        return reply.code(403).send({ error: "Forbidden" });
+      const user = await requireAuth(request, reply);
+      if (!user) return reply;
+      const id = idSchema.safeParse(request.params.id);
+      const body = z
+        .object({
+          items: z
+            .array(
+              z
+                .object({
+                  mediaType: z.enum(["movie", "tv"]),
+                  id: z.number().int().positive().safe(),
+                })
+                .strict(),
+            )
+            .max(200),
+        })
+        .strict()
+        .safeParse(request.body);
+      if (!id.success || !body.success)
+        return reply.code(400).send({ error: "Invalid playlist order" });
+      try {
+        const result = await repository.reorderItems(
+          user.id,
+          id.data,
+          body.data.items,
+        );
+        if (result === "missing")
+          return reply.code(404).send({ error: "Playlist not found" });
+        if (result === "mismatch")
+          return reply.code(409).send({ error: "Playlist contents changed" });
+        return reply.code(204).send();
+      } catch (error) {
+        request.log.error({ err: error }, "Reordering playlist failed");
+        return reply.code(500).send({ error: "Internal server error" });
+      }
+    },
+  );
+
   app.post<{ Body: unknown }>(
     "/playlists",
     { bodyLimit: 1024 },

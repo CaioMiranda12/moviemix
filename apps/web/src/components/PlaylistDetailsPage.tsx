@@ -26,6 +26,8 @@ export function PlaylistDetailsPage() {
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState("recent");
   const [showAdd, setShowAdd] = useState(false);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   const visibleItems = useMemo(() => {
     const items = (data?.items ?? []).filter((item) =>
@@ -34,11 +36,54 @@ export function PlaylistDetailsPage() {
         .includes(filter.trim().toLocaleLowerCase("pt-BR")),
     );
     return [...items].sort((a, b) => {
+      if (sort === "manual") return 0;
       if (sort === "title") return a.title.localeCompare(b.title, "pt-BR");
       if (sort === "oldest") return a.addedAt.localeCompare(b.addedAt);
       return b.addedAt.localeCompare(a.addedAt);
     });
   }, [data, filter, sort]);
+
+  function itemKey(item: PlaylistItem) {
+    return `${item.mediaType}:${item.id}`;
+  }
+
+  async function moveItem(fromKey: string, toKey: string) {
+    if (
+      !id ||
+      !data ||
+      busy ||
+      savingOrder ||
+      fromKey === toKey ||
+      filter.trim()
+    )
+      return;
+    const items = [...data.items];
+    const from = items.findIndex((item) => itemKey(item) === fromKey);
+    const to = items.findIndex((item) => itemKey(item) === toKey);
+    if (from < 0 || to < 0) return;
+    const [moved] = items.splice(from, 1);
+    items.splice(to, 0, moved);
+    setSavingOrder(true);
+    setError("");
+    setFeedback("");
+    try {
+      await playlistsApi.reorderItems(
+        id,
+        items.map(({ mediaType, id: mediaId }) => ({ mediaType, id: mediaId })),
+      );
+      setData({ ...data, items });
+      setFeedback("Ordem personalizada salva.");
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Não foi possível salvar a ordem.",
+      );
+      setRevision((n) => n + 1);
+    } finally {
+      setSavingOrder(false);
+    }
+  }
 
   function poster(item: PlaylistItem, size = "w185") {
     return item.posterPath
@@ -90,7 +135,7 @@ export function PlaylistDetailsPage() {
   }
 
   async function add(item: CatalogItem) {
-    if (!id || busy) return;
+    if (!id || busy || savingOrder) return;
     setBusy(true);
     setFeedback("");
     setError("");
@@ -108,7 +153,7 @@ export function PlaylistDetailsPage() {
   }
 
   async function remove(mediaType: MediaType, mediaId: number) {
-    if (!id || busy) return;
+    if (!id || busy || savingOrder) return;
     setBusy(true);
     setFeedback("");
     setError("");
@@ -237,12 +282,21 @@ export function PlaylistDetailsPage() {
                       onChange={(event) => setSort(event.target.value)}
                       className="rounded-xl border border-white/15 bg-zinc-900 px-4 py-3 text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
                     >
+                      <option value="manual">Minha ordem</option>
                       <option value="recent">Adicionados recentemente</option>
                       <option value="oldest">Adicionados primeiro</option>
                       <option value="title">Título (A–Z)</option>
                     </select>
                   </div>
                 </div>
+                {sort === "manual" &&
+                !filter.trim() &&
+                data.items.length > 1 ? (
+                  <p className="mb-3 text-sm text-zinc-400">
+                    Arraste os títulos ou use os botões de subir e descer para
+                    organizar sua lista.
+                  </p>
+                ) : null}
                 {visibleItems.length === 0 ? (
                   <p role="status" className="py-6 text-zinc-400">
                     Nenhum título corresponde à busca.
@@ -252,6 +306,26 @@ export function PlaylistDetailsPage() {
                   {visibleItems.map((item, index) => (
                     <li
                       key={`${item.mediaType}-${item.id}`}
+                      draggable={
+                        sort === "manual" && !filter.trim() && !savingOrder
+                      }
+                      onDragStart={(event) => {
+                        if (sort !== "manual" || filter.trim()) return;
+                        setDragging(itemKey(item));
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", itemKey(item));
+                      }}
+                      onDragOver={(event) => {
+                        if (dragging && sort === "manual")
+                          event.preventDefault();
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const source = dragging;
+                        setDragging(null);
+                        if (source) void moveItem(source, itemKey(item));
+                      }}
+                      onDragEnd={() => setDragging(null)}
                       className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-white/5 sm:gap-5 sm:px-5"
                     >
                       <span
@@ -285,6 +359,47 @@ export function PlaylistDetailsPage() {
                           {item.releaseDate?.slice(0, 4) || "Ano não informado"}
                         </p>
                       </div>
+                      {sort === "manual" &&
+                      !filter.trim() &&
+                      data.items.length > 1 ? (
+                        <div
+                          className="flex shrink-0 flex-col gap-1"
+                          aria-label={`Ordenar ${item.title}`}
+                        >
+                          <button
+                            type="button"
+                            disabled={savingOrder || busy || index === 0}
+                            onClick={() =>
+                              void moveItem(
+                                itemKey(item),
+                                itemKey(visibleItems[index - 1]),
+                              )
+                            }
+                            aria-label={`Mover ${item.title} para cima`}
+                            className="rounded border border-white/15 px-2 py-1 text-xs hover:text-emerald-400 disabled:opacity-30"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            disabled={
+                              savingOrder ||
+                              busy ||
+                              index === visibleItems.length - 1
+                            }
+                            onClick={() =>
+                              void moveItem(
+                                itemKey(item),
+                                itemKey(visibleItems[index + 1]),
+                              )
+                            }
+                            aria-label={`Mover ${item.title} para baixo`}
+                            className="rounded border border-white/15 px-2 py-1 text-xs hover:text-emerald-400 disabled:opacity-30"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      ) : null}
                       <button
                         type="button"
                         disabled={busy}

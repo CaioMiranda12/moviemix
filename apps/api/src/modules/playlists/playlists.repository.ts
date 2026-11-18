@@ -36,6 +36,11 @@ export interface PlaylistsRepository {
     type: "movie" | "tv",
     mediaId: number,
   ): Promise<"removed" | "missing" | "not-found">;
+  reorderItems(
+    userId: string,
+    id: string,
+    order: Array<{ mediaType: "movie" | "tv"; id: number }>,
+  ): Promise<"updated" | "missing" | "mismatch">;
   list(userId: string): Promise<Playlist[]>;
   create(userId: string, name: string): Promise<Playlist>;
   rename(userId: string, id: string, name: string): Promise<Playlist | null>;
@@ -156,6 +161,52 @@ export function makePlaylistsRepository(
         )
         .returning({ id: playlistItems.id });
       return deleted.length ? "removed" : "not-found";
+    },
+    async reorderItems(userId, id, order) {
+      return db.transaction(async (tx) => {
+        const [playlist] = await tx
+          .select({ id: playlists.id })
+          .from(playlists)
+          .where(and(eq(playlists.id, id), eq(playlists.ownerId, userId)))
+          .for("update")
+          .limit(1);
+        if (!playlist) return "missing" as const;
+        const current = await tx
+          .select({
+            itemId: playlistItems.id,
+            externalId: media.externalId,
+            mediaType: media.mediaType,
+          })
+          .from(playlistItems)
+          .innerJoin(media, eq(media.id, playlistItems.mediaId))
+          .where(eq(playlistItems.playlistId, id));
+        if (current.length !== order.length) return "mismatch" as const;
+        const key = (type: string, externalId: number) =>
+          `${type}:${externalId}`;
+        const byKey = new Map(
+          current.map((row) => [
+            key(row.mediaType === "MOVIE" ? "movie" : "tv", row.externalId),
+            row.itemId,
+          ]),
+        );
+        if (byKey.size !== order.length) return "mismatch" as const;
+        const used = new Set<string>();
+        for (const entry of order) {
+          const itemKey = key(entry.mediaType, entry.id);
+          if (used.has(itemKey) || !byKey.has(itemKey))
+            return "mismatch" as const;
+          used.add(itemKey);
+        }
+        for (const [position, entry] of order.entries()) {
+          await tx
+            .update(playlistItems)
+            .set({ position })
+            .where(
+              eq(playlistItems.id, byKey.get(key(entry.mediaType, entry.id))!),
+            );
+        }
+        return "updated" as const;
+      });
     },
     async list(userId) {
       return db
