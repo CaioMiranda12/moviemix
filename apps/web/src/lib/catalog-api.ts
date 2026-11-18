@@ -12,7 +12,24 @@ export type CatalogItem = {
 
 type CatalogResponse = { results: CatalogItem[] };
 
-async function getCatalog(path: string): Promise<CatalogItem[]> {
+// Share identical in-flight public catalog requests. No response is cached after settlement.
+const pendingCatalog = new Map<string, Promise<CatalogItem[]>>();
+
+function getCatalog(path: string): Promise<CatalogItem[]> {
+  const existing = pendingCatalog.get(path);
+  if (existing) return existing;
+
+  const request = fetchCatalog(path);
+  pendingCatalog.set(path, request);
+  void request
+    .finally(() => {
+      if (pendingCatalog.get(path) === request) pendingCatalog.delete(path);
+    })
+    .catch(() => {});
+  return request;
+}
+
+async function fetchCatalog(path: string): Promise<CatalogItem[]> {
   const response = await fetch(`/api/catalog${path}`, {
     credentials: "same-origin",
   });
