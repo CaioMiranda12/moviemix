@@ -52,7 +52,10 @@ export function buildApp(options: AppOptions = {}): FastifyInstance {
   const app = Fastify({ logger: true });
 
   app.register(async (authApp) => {
-    if (options.findUserByEmail && options.createSession) {
+    if (
+      options.createUser ||
+      (options.findUserByEmail && options.createSession)
+    ) {
       await authApp.register(rateLimit, { global: false });
     }
 

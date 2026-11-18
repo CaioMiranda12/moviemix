@@ -111,13 +111,46 @@ export function makePlaylistsRepository(
       return row ?? null;
     },
     async publicItems(id) {
-      const [published] = await db
-        .select({ id: playlists.id })
+      // A single statement checks visibility and reads the items under the
+      // same PostgreSQL snapshot. A revoked playlist cannot leak items between
+      // a visibility check and a second query.
+      const rows = await db
+        .select({
+          playlistId: playlists.id,
+          id: media.externalId,
+          mediaType: media.mediaType,
+          title: media.title,
+          overview: media.overview,
+          posterPath: media.posterPath,
+          releaseDate: media.releaseDate,
+          addedAt: playlistItems.addedAt,
+        })
         .from(playlists)
+        .leftJoin(playlistItems, eq(playlistItems.playlistId, playlists.id))
+        .leftJoin(media, eq(media.id, playlistItems.mediaId))
         .where(and(eq(playlists.id, id), eq(playlists.visibility, "PUBLIC")))
-        .limit(1);
-      if (!published) return null;
-      return loadItems(id);
+        .orderBy(playlistItems.position, playlistItems.addedAt);
+      if (rows.length === 0) return null;
+      return rows.flatMap((row): PlaylistItem[] => {
+        if (
+          row.id === null ||
+          row.mediaType === null ||
+          row.title === null ||
+          row.addedAt === null
+        )
+          return [];
+        return [
+          {
+            id: row.id,
+            mediaType: row.mediaType === "MOVIE" ? "movie" : "tv",
+            title: row.title,
+            overview: row.overview ?? "",
+            posterPath: row.posterPath,
+            releaseDate: row.releaseDate ?? "",
+            addedAt: row.addedAt.toISOString(),
+          },
+        ];
+      });
     },
     async setVisibility(userId, id, visibility) {
       const [row] = await db
