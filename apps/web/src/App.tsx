@@ -1,3 +1,4 @@
+import { PlaylistDetailsPage } from "./components/PlaylistDetailsPage";
 import { PlaylistsPage } from "./components/PlaylistsPage";
 import { useEffect, useState } from "react";
 import {
@@ -115,6 +116,13 @@ function AppRoutes() {
         <Route
           path="/lists"
           element={user ? <PlaylistsPage /> : <Navigate to="/login" replace />}
+        />
+
+        <Route
+          path="/lists/:id"
+          element={
+            user ? <PlaylistDetailsPage /> : <Navigate to="/login" replace />
+          }
         />
 
         <Route
