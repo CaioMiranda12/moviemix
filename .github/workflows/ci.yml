@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Validate and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit and route tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Start test database
+        run: docker compose --profile test up -d --wait test-db
+
+      - name: Apply database migrations
+        env:
+          DATABASE_URL: postgres://moviemix_test:moviemix_test_local@127.0.0.1:5434/moviemix_test
+        run: npm run db:migrate -w @moviemix/api
+
+      - name: Integration tests
+        env:
+          TEST_DATABASE_URL: postgres://moviemix_test:moviemix_test_local@127.0.0.1:5434/moviemix_test
+        run: npm run test:integration
+
+      - name: Stop test database
+        if: always()
+        run: docker compose --profile test down
