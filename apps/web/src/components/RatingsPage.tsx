@@ -66,7 +66,7 @@ export function RatingsPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 sm:px-8">
+    <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 pb-28 sm:px-8 md:pb-8">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
         <Link to="/" className="text-2xl font-bold text-emerald-400">
           MovieMix
