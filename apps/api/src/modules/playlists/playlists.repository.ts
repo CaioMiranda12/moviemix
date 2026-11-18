@@ -8,6 +8,7 @@ export type Playlist = {
   description: string | null;
   createdAt: Date;
   updatedAt: Date;
+  visibility: "PRIVATE" | "PUBLIC";
 };
 
 export type PlaylistItem = {
@@ -24,6 +25,13 @@ export type PlaylistMedia = Omit<PlaylistItem, "addedAt">;
 
 export interface PlaylistsRepository {
   get(userId: string, id: string): Promise<Playlist | null>;
+  publicGet(id: string): Promise<Playlist | null>;
+  publicItems(id: string): Promise<PlaylistItem[] | null>;
+  setVisibility(
+    userId: string,
+    id: string,
+    visibility: "PRIVATE" | "PUBLIC",
+  ): Promise<Playlist | null>;
   items(userId: string, id: string): Promise<PlaylistItem[] | null>;
   addItem(
     userId: string,
@@ -56,6 +64,7 @@ export function makePlaylistsRepository(
     description: playlists.description,
     createdAt: playlists.createdAt,
     updatedAt: playlists.updatedAt,
+    visibility: playlists.visibility,
   };
   async function owned(userId: string, id: string) {
     const [row] = await db
@@ -65,34 +74,62 @@ export function makePlaylistsRepository(
       .limit(1);
     return row ?? null;
   }
+  async function loadItems(id: string): Promise<PlaylistItem[]> {
+    const rows = await db
+      .select({
+        id: media.externalId,
+        mediaType: media.mediaType,
+        title: media.title,
+        overview: media.overview,
+        posterPath: media.posterPath,
+        releaseDate: media.releaseDate,
+        addedAt: playlistItems.addedAt,
+      })
+      .from(playlistItems)
+      .innerJoin(media, eq(media.id, playlistItems.mediaId))
+      .where(eq(playlistItems.playlistId, id))
+      .orderBy(playlistItems.position, playlistItems.addedAt);
+    return rows.map((row) => ({
+      id: row.id,
+      mediaType:
+        row.mediaType === "MOVIE" ? ("movie" as const) : ("tv" as const),
+      title: row.title,
+      overview: row.overview ?? "",
+      posterPath: row.posterPath,
+      releaseDate: row.releaseDate ?? "",
+      addedAt: row.addedAt.toISOString(),
+    }));
+  }
   return {
     get: owned,
+    async publicGet(id) {
+      const [row] = await db
+        .select(columns)
+        .from(playlists)
+        .where(and(eq(playlists.id, id), eq(playlists.visibility, "PUBLIC")))
+        .limit(1);
+      return row ?? null;
+    },
+    async publicItems(id) {
+      const [published] = await db
+        .select({ id: playlists.id })
+        .from(playlists)
+        .where(and(eq(playlists.id, id), eq(playlists.visibility, "PUBLIC")))
+        .limit(1);
+      if (!published) return null;
+      return loadItems(id);
+    },
+    async setVisibility(userId, id, visibility) {
+      const [row] = await db
+        .update(playlists)
+        .set({ visibility, updatedAt: new Date() })
+        .where(and(eq(playlists.id, id), eq(playlists.ownerId, userId)))
+        .returning(columns);
+      return row ?? null;
+    },
     async items(userId, id) {
       if (!(await owned(userId, id))) return null;
-      const rows = await db
-        .select({
-          id: media.externalId,
-          mediaType: media.mediaType,
-          title: media.title,
-          overview: media.overview,
-          posterPath: media.posterPath,
-          releaseDate: media.releaseDate,
-          addedAt: playlistItems.addedAt,
-        })
-        .from(playlistItems)
-        .innerJoin(media, eq(media.id, playlistItems.mediaId))
-        .where(eq(playlistItems.playlistId, id))
-        .orderBy(playlistItems.position, playlistItems.addedAt);
-      return rows.map((row) => ({
-        id: row.id,
-        mediaType:
-          row.mediaType === "MOVIE" ? ("movie" as const) : ("tv" as const),
-        title: row.title,
-        overview: row.overview ?? "",
-        posterPath: row.posterPath,
-        releaseDate: row.releaseDate ?? "",
-        addedAt: row.addedAt.toISOString(),
-      }));
+      return loadItems(id);
     },
     async addItem(userId, id, item) {
       return db.transaction(async (tx) => {

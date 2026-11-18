@@ -16,6 +16,7 @@ export type Playlist = {
   description: string | null;
   createdAt: string;
   updatedAt: string;
+  visibility: "PRIVATE" | "PUBLIC";
 };
 
 async function request(path: string, init?: RequestInit): Promise<unknown> {
@@ -44,11 +45,31 @@ function isPlaylist(value: unknown): value is Playlist {
     typeof item.name === "string" &&
     (item.description === null || typeof item.description === "string") &&
     typeof item.createdAt === "string" &&
-    typeof item.updatedAt === "string"
+    typeof item.updatedAt === "string" &&
+    (item.visibility === "PRIVATE" || item.visibility === "PUBLIC")
   );
 }
 
 export const playlistsApi = {
+  async publicGet(id: string): Promise<PlaylistDetails> {
+    const result = (await request(
+      `/public/${encodeURIComponent(id)}`,
+    )) as PlaylistDetails;
+    if (!result || !isPlaylist(result.playlist) || !Array.isArray(result.items))
+      throw new Error("Lista pública indisponível.");
+    return result;
+  },
+  async setVisibility(
+    id: string,
+    visibility: "PRIVATE" | "PUBLIC",
+  ): Promise<Playlist> {
+    const result = await request(`/${encodeURIComponent(id)}/visibility`, {
+      method: "PATCH",
+      body: JSON.stringify({ visibility }),
+    });
+    if (!isPlaylist(result)) throw new Error("Resposta inválida da lista.");
+    return result;
+  },
   async get(id: string): Promise<PlaylistDetails> {
     const result = (await request(
       `/${encodeURIComponent(id)}`,

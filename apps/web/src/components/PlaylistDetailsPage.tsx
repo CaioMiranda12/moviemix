@@ -28,6 +28,7 @@ export function PlaylistDetailsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [sharingBusy, setSharingBusy] = useState(false);
 
   const visibleItems = useMemo(() => {
     const items = (data?.items ?? []).filter((item) =>
@@ -118,6 +119,43 @@ export function PlaylistDetailsPage() {
       active = false;
     };
   }, [id, revision]);
+
+  async function toggleSharing() {
+    if (!id || !data || sharingBusy) return;
+    setSharingBusy(true);
+    setError("");
+    try {
+      const visibility =
+        data.playlist.visibility === "PUBLIC" ? "PRIVATE" : "PUBLIC";
+      const playlist = await playlistsApi.setVisibility(id, visibility);
+      setData({ ...data, playlist });
+      setFeedback(
+        visibility === "PUBLIC"
+          ? "Compartilhamento ativado."
+          : "Compartilhamento desativado.",
+      );
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Erro ao alterar compartilhamento.",
+      );
+    } finally {
+      setSharingBusy(false);
+    }
+  }
+
+  async function copyShareLink() {
+    if (!id) return;
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/shared/lists/${encodeURIComponent(id)}`,
+      );
+      setFeedback("Link copiado!");
+    } catch {
+      setError("Não foi possível copiar o link. Copie o endereço manualmente.");
+    }
+  }
 
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -218,7 +256,10 @@ export function PlaylistDetailsPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-zinc-950/30" />
             <div className="relative flex min-h-64 flex-col justify-end gap-3 px-6 py-8 sm:px-10 sm:py-10">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
-                Coleção privada · MovieMix
+                {data.playlist.visibility === "PUBLIC"
+                  ? "Coleção pública"
+                  : "Coleção privada"}{" "}
+                · MovieMix
               </p>
               <h1 className="max-w-3xl break-words text-4xl font-black tracking-tight sm:text-6xl">
                 {data.playlist.name}
@@ -236,6 +277,35 @@ export function PlaylistDetailsPage() {
                 série(s)
               </p>
             </div>
+          </section>
+          <section
+            aria-label="Compartilhamento da lista"
+            className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-zinc-900/50 p-4"
+          >
+            <span className="flex-1 text-sm text-zinc-300">
+              {data.playlist.visibility === "PUBLIC"
+                ? "Pública: qualquer pessoa com o link pode visualizar."
+                : "Privada: apenas você pode visualizar."}
+            </span>
+            <button
+              type="button"
+              disabled={sharingBusy}
+              onClick={() => void toggleSharing()}
+              className="rounded-lg border border-emerald-500 px-4 py-2 text-emerald-300 disabled:opacity-50"
+            >
+              {data.playlist.visibility === "PUBLIC"
+                ? "Desativar compartilhamento"
+                : "Ativar compartilhamento"}
+            </button>
+            {data.playlist.visibility === "PUBLIC" && (
+              <button
+                type="button"
+                onClick={() => void copyShareLink()}
+                className="rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-zinc-950"
+              >
+                Copiar link
+              </button>
+            )}
           </section>
           <section aria-labelledby="playlist-items-heading" className="mb-10">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
