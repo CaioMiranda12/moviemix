@@ -8,6 +8,7 @@ import {
   Route,
   Routes,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 import { MobileNavigation } from "./components/MobileNavigation";
 import { LoginForm } from "./components/LoginForm";
@@ -26,6 +27,7 @@ function AppRoutes() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     let active = true;
@@ -50,7 +52,13 @@ function AppRoutes() {
   function handleLogin(authenticatedUser: AuthUser) {
     setUser(authenticatedUser);
     setLogoutError("");
-    navigate("/", { replace: true });
+    const returnTo = (location.state as { from?: unknown } | null)?.from;
+    navigate(
+      typeof returnTo === "string" && returnTo.startsWith("/shared/lists/")
+        ? returnTo
+        : "/",
+      { replace: true },
+    );
   }
 
   async function handleLogout() {
@@ -114,7 +122,10 @@ function AppRoutes() {
           }
         />
 
-        <Route path="/shared/lists/:id" element={<PublicPlaylistPage />} />
+        <Route
+          path="/shared/lists/:id"
+          element={<PublicPlaylistPage isAuthenticated={Boolean(user)} />}
+        />
         <Route
           path="/lists"
           element={user ? <PlaylistsPage /> : <Navigate to="/login" replace />}
