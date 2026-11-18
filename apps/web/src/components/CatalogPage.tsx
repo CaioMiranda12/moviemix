@@ -86,6 +86,16 @@ export function CatalogPage({
 }: CatalogPageProps) {
   const [query, setQuery] = useState("");
   const [mediaType, setMediaType] = useState<MediaType>("movie");
+  const [year, setYear] = useState("");
+  const [minRating, setMinRating] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const [filters, setFilters] = useState<{
+    type: MediaType;
+    query?: string;
+    genre?: number;
+    year?: number;
+    minRating?: number;
+  } | null>(null);
   const [search, setSearch] = useState<{
     query: string;
     type: MediaType;
@@ -105,11 +115,13 @@ export function CatalogPage({
     setLoading(true);
     setError("");
 
-    const request = discovery
-      ? catalogApi.discover(discovery.type, discovery.genreId)
-      : search
-        ? catalogApi.search(search.query, search.type)
-        : catalogApi.trending();
+    const request = filters
+      ? catalogApi.filter(filters)
+      : discovery
+        ? catalogApi.discover(discovery.type, discovery.genreId)
+        : search
+          ? catalogApi.search(search.query, search.type)
+          : catalogApi.trending();
 
     request
       .then((results) => {
@@ -128,27 +140,44 @@ export function CatalogPage({
     return () => {
       active = false;
     };
-  }, [search, discovery, retry]);
+  }, [search, discovery, filters, retry]);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = query.trim();
-    if (trimmed.length < 2 || trimmed.length > 100) return;
-    if (
-      !discovery &&
-      search?.query === trimmed &&
-      search.type === mediaType &&
-      !error
-    )
-      return;
+    if (trimmed && (trimmed.length < 2 || trimmed.length > 100)) return;
+    if (year && !/^(18[7-9]\d|19\d{2}|20\d{2}|2100)$/.test(year)) return;
+    const next = {
+      type: mediaType,
+      query: trimmed || undefined,
+      genre: selectedGenre ?? undefined,
+      year: year ? Number(year) : undefined,
+      minRating: minRating ? Number(minRating) : undefined,
+    };
+    if (JSON.stringify(filters) === JSON.stringify(next) && !error) return;
+    setSearch(null);
     setDiscovery(null);
-    setSearch({ query: trimmed, type: mediaType });
+    setFilters(next);
+  }
+
+  function clearFilters() {
+    setSelectedGenre(null);
+    setYear("");
+    setMinRating("");
+    setDiscovery(null);
+    setSearch(null);
+    const trimmed = query.trim();
+    setFilters({ type: mediaType, query: trimmed || undefined });
   }
 
   function showTrending() {
     setQuery("");
+    setYear("");
+    setMinRating("");
+    setSelectedGenre(null);
     setSearch(null);
     setDiscovery(null);
+    setFilters(null);
   }
 
   return (
@@ -228,7 +257,6 @@ export function CatalogPage({
             onChange={(event) => setQuery(event.target.value)}
             minLength={2}
             maxLength={100}
-            required
             placeholder="Buscar filmes ou séries..."
             className="min-w-0 flex-1 rounded-xl border border-white/15 bg-zinc-900 px-4 py-3 outline-none focus:border-emerald-400"
           />
@@ -238,7 +266,10 @@ export function CatalogPage({
           <select
             id="catalog-type"
             value={mediaType}
-            onChange={(event) => setMediaType(event.target.value as MediaType)}
+            onChange={(event) => {
+              setMediaType(event.target.value as MediaType);
+              setSelectedGenre(null);
+            }}
             className="rounded-xl border border-white/15 bg-zinc-900 px-4 py-3"
           >
             <option value="movie">Filmes</option>
@@ -252,6 +283,59 @@ export function CatalogPage({
             Buscar
           </button>
         </form>
+        <div
+          className="mt-4 flex flex-wrap gap-3"
+          aria-label="Filtros avançados"
+        >
+          <div>
+            <label
+              htmlFor="catalog-year"
+              className="mb-1 block text-sm text-zinc-300"
+            >
+              Ano
+            </label>
+            <input
+              id="catalog-year"
+              type="number"
+              min="1870"
+              max="2100"
+              placeholder="Todos"
+              value={year}
+              onChange={(event) => setYear(event.target.value)}
+              className="w-32 rounded-xl border border-white/15 bg-zinc-900 px-4 py-2"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="catalog-rating"
+              className="mb-1 block text-sm text-zinc-300"
+            >
+              Nota mínima TMDB
+            </label>
+            <select
+              id="catalog-rating"
+              value={minRating}
+              onChange={(event) => setMinRating(event.target.value)}
+              className="rounded-xl border border-white/15 bg-zinc-900 px-4 py-2"
+            >
+              <option value="">Qualquer nota</option>
+              {[5, 6, 7, 8, 9].map((rating) => (
+                <option key={rating} value={rating}>
+                  {rating}+
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {(selectedGenre !== null || year !== "" || minRating !== "") && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-4 rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-emerald-400"
+          >
+            Limpar filtros
+          </button>
+        )}
         <div className="mt-8 space-y-3" aria-label="Explorar por gênero">
           <h2 className="text-lg font-semibold">Explorar por gênero</h2>
           <p className="text-sm text-zinc-400">
@@ -266,19 +350,34 @@ export function CatalogPage({
               <button
                 key={`${mediaType}-${genre.id}`}
                 type="button"
-                aria-pressed={
-                  discovery?.type === mediaType &&
-                  discovery.genreId === genre.id
-                }
+                aria-pressed={selectedGenre === genre.id}
                 onClick={() => {
+                  const nextGenre =
+                    selectedGenre === genre.id ? null : genre.id;
+                  setSelectedGenre(nextGenre);
                   setSearch(null);
-                  setDiscovery({
-                    type: mediaType,
-                    genreId: genre.id,
-                    genreName: genre.name,
-                  });
+                  if (query.trim() || year || minRating) {
+                    setDiscovery(null);
+                    setFilters({
+                      type: mediaType,
+                      query: query.trim() || undefined,
+                      genre: nextGenre ?? undefined,
+                      year: year ? Number(year) : undefined,
+                      minRating: minRating ? Number(minRating) : undefined,
+                    });
+                  } else if (nextGenre !== null) {
+                    setFilters(null);
+                    setDiscovery({
+                      type: mediaType,
+                      genreId: nextGenre,
+                      genreName: genre.name,
+                    });
+                  } else {
+                    setFilters(null);
+                    setDiscovery(null);
+                  }
                 }}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${discovery?.type === mediaType && discovery.genreId === genre.id ? "border-emerald-400 bg-emerald-500 text-zinc-950" : "border-white/20 text-zinc-200 hover:bg-white/10"}`}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${selectedGenre === genre.id ? "border-emerald-400 bg-emerald-500 text-zinc-950" : "border-white/20 text-zinc-200 hover:bg-white/10"}`}
               >
                 {genre.name}
               </button>
@@ -290,13 +389,15 @@ export function CatalogPage({
       <section aria-live="polite" className="pb-16">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold sm:text-2xl">
-            {discovery
-              ? `${discovery.type === "movie" ? "Filmes" : "Séries"} · ${discovery.genreName}`
-              : search
-                ? `Resultados para “${search.query}”`
-                : "Filmes em alta na semana"}
+            {filters
+              ? `Resultados filtrados${filters.query ? ` para “${filters.query}”` : ""}`
+              : discovery
+                ? `${discovery.type === "movie" ? "Filmes" : "Séries"} · ${discovery.genreName}`
+                : search
+                  ? `Resultados para “${search.query}”`
+                  : "Filmes em alta na semana"}
           </h2>
-          {(search || discovery) && (
+          {(search || discovery || filters) && (
             <button
               type="button"
               onClick={showTrending}

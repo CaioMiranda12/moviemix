@@ -83,6 +83,7 @@ export interface CatalogSearchResult {
 }
 
 interface TmdbSearchItem {
+  genre_ids?: number[];
   id: number;
   title?: string;
   name?: string;
@@ -283,5 +284,113 @@ export function makeDiscoverByGenre(
     } catch {
       throw new TmdbUnavailableError();
     }
+  };
+}
+
+export interface CatalogFilters {
+  type: CatalogMediaType;
+  query?: string;
+  genre?: number;
+  year?: number;
+  minRating?: number;
+}
+
+export type FilterCatalog = (
+  filters: CatalogFilters,
+) => Promise<CatalogSearchResult[]>;
+
+/** TMDB does not support text queries on /discover. For combined searches we
+ * scan the first 10 search pages (at most 200 candidates), then apply filters.
+ * F2-05 will add proper pagination; this is intentionally a bounded preview. */
+export function makeFilterCatalog(
+  token: string,
+  fetcher: typeof fetch = fetch,
+): FilterCatalog {
+  return async (filters) => {
+    const hasText = Boolean(filters.query);
+    const url = new URL(
+      `https://api.themoviedb.org/3/${hasText ? "search" : "discover"}/${filters.type}`,
+    );
+    url.searchParams.set("language", "pt-BR");
+    url.searchParams.set("include_adult", "false");
+    if (hasText) url.searchParams.set("query", filters.query!);
+    else {
+      url.searchParams.set("sort_by", "popularity.desc");
+      if (filters.genre !== undefined)
+        url.searchParams.set("with_genres", String(filters.genre));
+      if (filters.year !== undefined)
+        url.searchParams.set(
+          filters.type === "movie"
+            ? "primary_release_year"
+            : "first_air_date_year",
+          String(filters.year),
+        );
+      if (filters.minRating !== undefined)
+        url.searchParams.set("vote_average.gte", String(filters.minRating));
+    }
+    const results: CatalogSearchResult[] = [];
+    const maxPages =
+      hasText &&
+      (filters.genre !== undefined ||
+        filters.year !== undefined ||
+        filters.minRating !== undefined)
+        ? 10
+        : 1;
+    for (let page = 1; page <= maxPages; page++) {
+      url.searchParams.set("page", String(page));
+      let response: Response;
+      try {
+        response = await fetcher(url.toString(), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          signal: AbortSignal.timeout(5000),
+        });
+      } catch {
+        throw new TmdbUnavailableError();
+      }
+      if (!response.ok) throw new TmdbUnavailableError();
+      let payload: { results?: TmdbSearchItem[]; total_pages?: number };
+      try {
+        payload = (await response.json()) as typeof payload;
+        if (!Array.isArray(payload.results)) throw new Error("Invalid results");
+      } catch {
+        throw new TmdbUnavailableError();
+      }
+      for (const item of payload.results!) {
+        const date =
+          filters.type === "movie"
+            ? (item.release_date ?? "")
+            : (item.first_air_date ?? "");
+        if (
+          filters.genre !== undefined &&
+          !item.genre_ids?.includes(filters.genre)
+        )
+          continue;
+        if (
+          filters.year !== undefined &&
+          Number(date.slice(0, 4)) !== filters.year
+        )
+          continue;
+        if (
+          filters.minRating !== undefined &&
+          !(item.vote_average >= filters.minRating)
+        )
+          continue;
+        results.push({
+          id: item.id,
+          mediaType: filters.type,
+          title:
+            filters.type === "movie" ? (item.title ?? "") : (item.name ?? ""),
+          overview: item.overview,
+          posterPath: item.poster_path,
+          releaseDate: date,
+          voteAverage: item.vote_average,
+        });
+      }
+      if (!hasText || page >= (payload.total_pages ?? 1)) break;
+    }
+    return results;
   };
 }
