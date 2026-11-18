@@ -36,6 +36,8 @@ describe("interações reais dos componentes", () => {
     });
     expect(removeButton.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(removeButton);
+    expect(remove).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Remover favorito" }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith("movie", 42));
     await screen.findByRole("button", { name: /Adicionar à Minha Lista/i });
   });
@@ -80,6 +82,10 @@ describe("interações reais dos componentes", () => {
     await waitFor(() => expect(set).toHaveBeenCalledWith("movie", 42, 5));
     await screen.findByText("5/5");
     fireEvent.click(screen.getByRole("button", { name: "Remover avaliação" }));
+    expect(remove).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("alertdialog").querySelector("button:last-child")!,
+    );
     await waitFor(() => expect(remove).toHaveBeenCalledWith("movie", 42));
     await screen.findByText("Sem avaliação");
   });
@@ -98,6 +104,8 @@ describe("interações reais dos componentes", () => {
     await waitFor(() => expect(set).toHaveBeenCalledWith("tv", 17, "WATCHING"));
     await waitFor(() => expect(select.value).toBe("WATCHING"));
     fireEvent.change(select, { target: { value: "" } });
+    expect(remove).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Remover status" }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith("tv", 17));
     await waitFor(() => expect(select.value).toBe(""));
   });

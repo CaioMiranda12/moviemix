@@ -1,3 +1,4 @@
+import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState } from "react";
 import type { MediaType } from "../lib/catalog-api";
 import { ratingsApi } from "../lib/ratings-api";
@@ -5,6 +6,7 @@ import { ratingsApi } from "../lib/ratings-api";
 type Props = { mediaType: MediaType; id: number };
 
 export function RatingControl({ mediaType, id }: Props) {
+  const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [score, setScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +43,15 @@ export function RatingControl({ mediaType, id }: Props) {
 
   async function update(next: number | null) {
     if (saving || loading) return;
+    if (
+      next === null &&
+      !(await confirmDelete(
+        "Remover avaliação?",
+        "Sua avaliação para este título será excluída.",
+        "Remover avaliação",
+      ))
+    )
+      return;
     setSaving(true);
     setError("");
     try {
@@ -60,6 +71,7 @@ export function RatingControl({ mediaType, id }: Props) {
 
   return (
     <section className="mt-6 space-y-2" aria-label="Minha avaliação">
+      {confirmationDialog}
       <h2 className="text-sm font-medium text-zinc-200">Minha avaliação</h2>
       <div className="flex flex-wrap items-center gap-2">
         <div

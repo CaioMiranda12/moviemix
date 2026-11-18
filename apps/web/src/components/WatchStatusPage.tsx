@@ -1,3 +1,4 @@
+import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ListSearch } from "./ListSearch";
@@ -14,6 +15,7 @@ import {
 type Filter = WatchStatus | "ALL";
 
 export function WatchStatusPage() {
+  const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [items, setItems] = useState<WatchStatusItem[]>([]);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,14 @@ export function WatchStatusPage() {
   }, []);
 
   async function remove(item: WatchStatusItem) {
+    if (
+      !(await confirmDelete(
+        "Remover acompanhamento?",
+        `Remover "${item.title}"?`,
+        "Remover status",
+      ))
+    )
+      return;
     const key = `${item.mediaType}-${item.id}`;
     setRemoving(key);
     setError("");
@@ -79,6 +89,7 @@ export function WatchStatusPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 pb-28 sm:px-8 md:pb-8">
+      {confirmationDialog}
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
         <Link to="/" className="text-2xl font-bold text-emerald-400">
           MovieMix

@@ -1,3 +1,4 @@
+import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState } from "react";
 import type { MediaType } from "../lib/catalog-api";
 import {
@@ -9,6 +10,7 @@ import {
 type Props = { mediaType: MediaType; id: number };
 
 export function WatchStatusControl({ mediaType, id }: Props) {
+  const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [status, setStatus] = useState<WatchStatus | "">("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,6 +45,16 @@ export function WatchStatusControl({ mediaType, id }: Props) {
 
   async function change(next: string) {
     if (saving || loading) return;
+    if (
+      next === "" &&
+      status !== "" &&
+      !(await confirmDelete(
+        "Remover acompanhamento?",
+        "O status de acompanhamento deste título será removido.",
+        "Remover status",
+      ))
+    )
+      return;
     setSaving(true);
     setError("");
     try {
@@ -65,6 +77,7 @@ export function WatchStatusControl({ mediaType, id }: Props) {
 
   return (
     <div className="mt-5 space-y-2">
+      {confirmationDialog}
       <label
         htmlFor="watch-status"
         className="block text-sm font-medium text-zinc-200"

@@ -1,3 +1,4 @@
+import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ListSearch } from "./ListSearch";
@@ -8,6 +9,7 @@ import { favoritesApi, type FavoriteItem } from "../lib/favorites-api";
 import { ratingsApi } from "../lib/ratings-api";
 
 export function FavoritesPage() {
+  const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -69,6 +71,14 @@ export function FavoritesPage() {
   );
 
   async function remove(item: FavoriteItem) {
+    if (
+      !(await confirmDelete(
+        "Remover dos favoritos?",
+        `Remover "${item.title}"?`,
+        "Remover favorito",
+      ))
+    )
+      return;
     const key = `${item.mediaType}-${item.id}`;
     setRemoving(key);
     setError("");
@@ -93,6 +103,7 @@ export function FavoritesPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 pb-28 sm:px-8 md:pb-8">
+      {confirmationDialog}
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
         <Link to="/" className="text-2xl font-bold text-emerald-400">
           MovieMix
