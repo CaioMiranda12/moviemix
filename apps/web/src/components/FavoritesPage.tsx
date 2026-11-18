@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ListSearch } from "./ListSearch";
+import { matchesListSearch } from "./list-search-utils";
 import { favoritesApi, type FavoriteItem } from "../lib/favorites-api";
 import { ratingsApi } from "../lib/ratings-api";
 
 export function FavoritesPage() {
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
   const [scores, setScores] = useState<Record<string, number>>({});
   const [removing, setRemoving] = useState("");
   const [error, setError] = useState("");
@@ -56,6 +59,8 @@ export function FavoritesPage() {
     };
   }, []);
 
+  const visible = items.filter((item) => matchesListSearch(item.title, query));
+
   async function remove(item: FavoriteItem) {
     const key = `${item.mediaType}-${item.id}`;
     setRemoving(key);
@@ -92,6 +97,7 @@ export function FavoritesPage() {
       <section className="py-10">
         <h1 className="text-3xl font-bold">Minha Lista</h1>
         <p className="mt-2 text-zinc-400">Seus filmes e séries favoritos.</p>
+        <ListSearch value={query} onChange={setQuery} />
         {error && (
           <p role="alert" className="mt-6 text-red-400">
             {error}
@@ -114,9 +120,13 @@ export function FavoritesPage() {
               Explorar catálogo
             </Link>
           </div>
+        ) : visible.length === 0 ? (
+          <p role="status" className="mt-8 text-zinc-400">
+            Nenhum título encontrado para sua busca.
+          </p>
         ) : (
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {items.map((item) => (
+            {visible.map((item) => (
               <article
                 key={`${item.mediaType}-${item.id}`}
                 className="overflow-hidden rounded-2xl border border-white/10 bg-white/5"
