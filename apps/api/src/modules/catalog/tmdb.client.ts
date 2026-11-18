@@ -394,3 +394,113 @@ export function makeFilterCatalog(
     return results;
   };
 }
+
+/** One TMDB source page per request. An empty filtered page can still have more pages. */
+export interface CatalogPage {
+  results: CatalogSearchResult[];
+  page: number;
+  hasMore: boolean;
+}
+
+export type FilterCatalogPage = (
+  filters: CatalogFilters,
+  page: number,
+) => Promise<CatalogPage>;
+
+export function makeFilterCatalogPage(
+  token: string,
+  fetcher: typeof fetch = fetch,
+): FilterCatalogPage {
+  return async (filters, page) => {
+    const hasText = Boolean(filters.query);
+    const url = new URL(
+      `https://api.themoviedb.org/3/${hasText ? "search" : "discover"}/${filters.type}`,
+    );
+    url.searchParams.set("language", "pt-BR");
+    url.searchParams.set("include_adult", "false");
+    url.searchParams.set("page", String(page));
+    if (hasText) url.searchParams.set("query", filters.query!);
+    else {
+      url.searchParams.set("sort_by", "popularity.desc");
+      if (filters.genre !== undefined)
+        url.searchParams.set("with_genres", String(filters.genre));
+      if (filters.year !== undefined)
+        url.searchParams.set(
+          filters.type === "movie"
+            ? "primary_release_year"
+            : "first_air_date_year",
+          String(filters.year),
+        );
+      if (filters.minRating !== undefined)
+        url.searchParams.set("vote_average.gte", String(filters.minRating));
+    }
+    let response: Response;
+    try {
+      response = await fetcher(url.toString(), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch {
+      throw new TmdbUnavailableError();
+    }
+    if (!response.ok) throw new TmdbUnavailableError();
+    try {
+      const payload = (await response.json()) as {
+        results?: TmdbSearchItem[];
+        total_pages?: number;
+      };
+      if (
+        !Array.isArray(payload.results) ||
+        !Number.isInteger(payload.total_pages) ||
+        payload.total_pages! < 0
+      )
+        throw new Error("Invalid TMDB response");
+      const results: CatalogSearchResult[] = [];
+      for (const item of payload.results) {
+        const date =
+          filters.type === "movie"
+            ? (item.release_date ?? "")
+            : (item.first_air_date ?? "");
+        if (
+          hasText &&
+          filters.genre !== undefined &&
+          !item.genre_ids?.includes(filters.genre)
+        )
+          continue;
+        if (
+          hasText &&
+          filters.year !== undefined &&
+          Number(date.slice(0, 4)) !== filters.year
+        )
+          continue;
+        if (
+          hasText &&
+          filters.minRating !== undefined &&
+          !(item.vote_average >= filters.minRating)
+        )
+          continue;
+        results.push({
+          id: item.id,
+          mediaType: filters.type,
+          title:
+            filters.type === "movie" ? (item.title ?? "") : (item.name ?? ""),
+          overview: item.overview,
+          posterPath: item.poster_path,
+          releaseDate: date,
+          voteAverage: item.vote_average,
+        });
+      }
+      // TMDB caps accessible pages at 500.
+      return {
+        results,
+        page,
+        hasMore: page < Math.min(payload.total_pages!, 500),
+      };
+    } catch {
+      throw new TmdbUnavailableError();
+    }
+  };
+}

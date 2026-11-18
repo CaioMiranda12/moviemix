@@ -9,6 +9,7 @@ import {
   type DiscoverByGenre,
   type FilterCatalog,
   type CatalogFilters,
+  type FilterCatalogPage,
 } from "./tmdb.client.js";
 
 export function registerCatalogRoutes(
@@ -18,6 +19,7 @@ export function registerCatalogRoutes(
   getCatalogDetails?: GetCatalogDetails,
   discoverByGenre?: DiscoverByGenre,
   filterCatalog?: FilterCatalog,
+  filterCatalogPage?: FilterCatalogPage,
 ): void {
   app.get("/catalog/trending", async (request, reply) => {
     if (!getTrendingMovies) {
@@ -148,6 +150,75 @@ export function registerCatalogRoutes(
     } catch (error) {
       if (!(error instanceof TmdbUnavailableError))
         request.log.error({ err: error }, "Unexpected catalog filter error");
+      return reply.code(502).send({ error: "Catalog provider unavailable" });
+    }
+  });
+
+  app.get<{
+    Querystring: {
+      type?: string;
+      q?: string;
+      genre?: string;
+      year?: string;
+      minRating?: string;
+      page?: string;
+    };
+  }>("/catalog/filter-page", async (request, reply) => {
+    const {
+      type = "movie",
+      q,
+      genre,
+      year,
+      minRating,
+      page = "1",
+    } = request.query;
+    const query = q?.trim();
+    const genreId = genre === undefined ? undefined : Number(genre);
+    const yearNumber = year === undefined ? undefined : Number(year);
+    const rating = minRating === undefined ? undefined : Number(minRating);
+    const allowed =
+      type === "movie"
+        ? [
+            28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749,
+            878, 10770, 53, 10752, 37,
+          ]
+        : [
+            10759, 16, 35, 80, 99, 18, 10751, 10762, 9648, 10763, 10764, 10765,
+            10766, 10767, 10768, 37,
+          ];
+    if (
+      !["movie", "tv"].includes(type) ||
+      !/^[1-9]\d*$/.test(page) ||
+      Number(page) > 500 ||
+      (q !== undefined && (!query || query.length < 2 || query.length > 100)) ||
+      (genre !== undefined &&
+        (!/^\d+$/.test(genre) || !allowed.includes(genreId!))) ||
+      (year !== undefined &&
+        (!/^\d{4}$/.test(year) || yearNumber! < 1870 || yearNumber! > 2100)) ||
+      (minRating !== undefined &&
+        (!/^(?:10(?:\.0)?|[0-9](?:\.[0-9])?)$/.test(minRating) ||
+          !Number.isFinite(rating)))
+    )
+      return reply.code(400).send({ error: "Invalid filter parameters" });
+    if (!filterCatalogPage)
+      return reply.code(503).send({ error: "TMDB not configured" });
+    try {
+      return await filterCatalogPage(
+        {
+          type: type as CatalogMediaType,
+          query,
+          genre: genreId,
+          year: yearNumber,
+          minRating: rating,
+        },
+        Number(page),
+      );
+    } catch (error) {
+      if (!(error instanceof TmdbUnavailableError))
+        request.log.error(
+          { err: error },
+          "Unexpected catalog pagination error",
+        );
       return reply.code(502).send({ error: "Catalog provider unavailable" });
     }
   });
