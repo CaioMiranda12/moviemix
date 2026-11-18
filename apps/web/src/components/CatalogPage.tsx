@@ -109,38 +109,79 @@ export function CatalogPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState("");
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    const incremental = page > 1 && Boolean(filters || discovery);
+    if (incremental) setLoadingMore(true);
+    else {
+      setLoading(true);
+      setItems([]);
+      setHasMore(false);
+    }
+    setMoreError("");
     setError("");
 
     const request = filters
-      ? catalogApi.filter(filters)
+      ? catalogApi.filterPage(filters, page)
       : discovery
-        ? catalogApi.discover(discovery.type, discovery.genreId)
+        ? catalogApi.filterPage(
+            { type: discovery.type, genre: discovery.genreId },
+            page,
+          )
         : search
-          ? catalogApi.search(search.query, search.type)
-          : catalogApi.trending();
+          ? catalogApi
+              .search(search.query, search.type)
+              .then((results) => ({ results, page: 1, hasMore: false }))
+          : catalogApi
+              .trending()
+              .then((results) => ({ results, page: 1, hasMore: false }));
 
     request
-      .then((results) => {
-        if (active) setItems(results);
+      .then((result) => {
+        if (!active) return;
+        setItems((previous) => {
+          if (!incremental) return result.results;
+          const seen = new Set(
+            previous.map((item) => `${item.mediaType ?? "movie"}-${item.id}`),
+          );
+          return [
+            ...previous,
+            ...result.results.filter((item) => {
+              const key = `${item.mediaType ?? "movie"}-${item.id}`;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            }),
+          ];
+        });
+        setHasMore(result.hasMore);
       })
       .catch(() => {
-        if (active) {
-          setItems([]);
-          setError("Não foi possível carregar o catálogo. Tente novamente.");
-        }
+        if (!active) return;
+        if (incremental)
+          setMoreError("Não foi possível carregar mais resultados.");
+        else setError("Não foi possível carregar o catálogo. Tente novamente.");
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setLoading(false);
+        setLoadingMore(false);
       });
-
     return () => {
       active = false;
     };
-  }, [search, discovery, filters, retry]);
+  }, [search, discovery, filters, page, retry]);
+
+  function resetPagination() {
+    setPage(1);
+    setHasMore(false);
+    setMoreError("");
+  }
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -155,12 +196,14 @@ export function CatalogPage({
       minRating: minRating ? Number(minRating) : undefined,
     };
     if (JSON.stringify(filters) === JSON.stringify(next) && !error) return;
+    resetPagination();
     setSearch(null);
     setDiscovery(null);
     setFilters(next);
   }
 
   function clearFilters() {
+    resetPagination();
     setSelectedGenre(null);
     setYear("");
     setMinRating("");
@@ -171,6 +214,7 @@ export function CatalogPage({
   }
 
   function showTrending() {
+    resetPagination();
     setQuery("");
     setYear("");
     setMinRating("");
@@ -354,6 +398,7 @@ export function CatalogPage({
                 onClick={() => {
                   const nextGenre =
                     selectedGenre === genre.id ? null : genre.id;
+                  resetPagination();
                   setSelectedGenre(nextGenre);
                   setSearch(null);
                   if (query.trim() || year || minRating) {
@@ -425,16 +470,55 @@ export function CatalogPage({
               Tentar novamente
             </button>
           </div>
-        ) : items.length === 0 ? (
+        ) : items.length === 0 && !hasMore ? (
           <p className="text-zinc-400">Nenhum resultado encontrado.</p>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {items.map((item) => (
-              <MovieCard
-                key={`${item.mediaType ?? "movie"}-${item.id}`}
-                item={item}
-              />
-            ))}
+          <div className="space-y-6">
+            {items.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {items.map((item) => (
+                  <MovieCard
+                    key={`${item.mediaType ?? "movie"}-${item.id}`}
+                    item={item}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-zinc-400">
+                Nenhum título nesta página. Você pode continuar buscando.
+              </p>
+            )}
+            {moreError && (
+              <p role="alert" className="text-red-400">
+                {moreError}
+              </p>
+            )}
+            {(filters || discovery) && (hasMore || moreError) && (
+              <button
+                type="button"
+                disabled={loadingMore}
+                onClick={() =>
+                  moreError
+                    ? setRetry((value) => value + 1)
+                    : setPage((value) => value + 1)
+                }
+                className="rounded-xl border border-emerald-400/50 px-5 py-3 font-medium text-emerald-400 hover:bg-white/10 disabled:opacity-60"
+              >
+                {loadingMore
+                  ? "Carregando mais..."
+                  : moreError
+                    ? "Tentar carregar novamente"
+                    : "Carregar mais"}
+              </button>
+            )}
+            {(filters || discovery) &&
+              !hasMore &&
+              !moreError &&
+              items.length > 0 && (
+                <p className="text-sm text-zinc-400">
+                  Você chegou ao fim dos resultados.
+                </p>
+              )}
           </div>
         )}
       </section>

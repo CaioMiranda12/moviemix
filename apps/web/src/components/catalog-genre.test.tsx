@@ -18,7 +18,9 @@ afterEach(() => {
 describe("exploração por gênero", () => {
   it("loads selected movie genre and switches to TV genres", async () => {
     vi.spyOn(catalogApi, "trending").mockResolvedValue([]);
-    const discover = vi.spyOn(catalogApi, "discover").mockResolvedValue([]);
+    const discover = vi
+      .spyOn(catalogApi, "filterPage")
+      .mockResolvedValue({ results: [], page: 1, hasMore: false });
     render(
       <MemoryRouter>
         <CatalogPage
@@ -31,13 +33,17 @@ describe("exploração por gênero", () => {
     );
     await screen.findByText("Nenhum resultado encontrado.");
     fireEvent.click(screen.getByRole("button", { name: /^Ação$/ }));
-    await waitFor(() => expect(discover).toHaveBeenCalledWith("movie", 28));
+    await waitFor(() =>
+      expect(discover).toHaveBeenCalledWith({ type: "movie", genre: 28 }, 1),
+    );
     expect(await screen.findByText("Filmes · Ação")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Tipo de conteúdo"), {
       target: { value: "tv" },
     });
     fireEvent.click(screen.getByRole("button", { name: /^Crime$/ }));
-    await waitFor(() => expect(discover).toHaveBeenCalledWith("tv", 80));
+    await waitFor(() =>
+      expect(discover).toHaveBeenCalledWith({ type: "tv", genre: 80 }, 1),
+    );
     expect(await screen.findByText("Séries · Crime")).toBeTruthy();
   });
 });

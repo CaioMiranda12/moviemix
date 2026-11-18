@@ -19,6 +19,7 @@ import {
   makeGetTrendingMovies,
   makeDiscoverByGenre,
   makeFilterCatalog,
+  makeFilterCatalogPage,
 } from "./modules/catalog/tmdb.client.js";
 
 import {
@@ -47,7 +48,20 @@ const discoverByGenre = tmdbToken ? makeDiscoverByGenre(tmdbToken) : undefined;
 const filterCache = makeCatalogCache();
 const filterCatalog = tmdbToken ? makeFilterCatalog(tmdbToken) : undefined;
 
+const filterPageCache = makeCatalogCache();
+const filterCatalogPage = tmdbToken
+  ? makeFilterCatalogPage(tmdbToken)
+  : undefined;
+
 const app = buildApp({
+  filterCatalogPage: filterCatalogPage
+    ? (filters, page) =>
+        filterPageCache.get(
+          JSON.stringify(["filter-page", filters, page]),
+          10 * 60_000,
+          () => filterCatalogPage(filters, page),
+        )
+    : undefined,
   filterCatalog: filterCatalog
     ? (filters) =>
         filterCache.get(JSON.stringify(["filter", filters]), 10 * 60_000, () =>

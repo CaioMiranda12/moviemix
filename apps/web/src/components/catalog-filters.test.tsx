@@ -18,7 +18,9 @@ afterEach(() => {
 describe("advanced catalog filters", () => {
   it("combines text, genre, year and rating", async () => {
     vi.spyOn(catalogApi, "trending").mockResolvedValue([]);
-    const filter = vi.spyOn(catalogApi, "filter").mockResolvedValue([]);
+    const filter = vi
+      .spyOn(catalogApi, "filterPage")
+      .mockResolvedValue({ results: [], page: 1, hasMore: false });
     render(
       <MemoryRouter>
         <CatalogPage
@@ -41,13 +43,16 @@ describe("advanced catalog filters", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /^Ação$/ }));
     await waitFor(() =>
-      expect(filter).toHaveBeenCalledWith({
-        type: "movie",
-        query: "Batman",
-        genre: 28,
-        year: 2022,
-        minRating: 7,
-      }),
+      expect(filter).toHaveBeenCalledWith(
+        {
+          type: "movie",
+          query: "Batman",
+          genre: 28,
+          year: 2022,
+          minRating: 7,
+        },
+        1,
+      ),
     );
   });
 });
@@ -56,7 +61,9 @@ describe("clear advanced filters", () => {
   it("keeps the text and media type while removing genre, year and rating", async () => {
     vi.spyOn(catalogApi, "trending").mockResolvedValue([]);
     vi.spyOn(catalogApi, "discover").mockResolvedValue([]);
-    const filter = vi.spyOn(catalogApi, "filter").mockResolvedValue([]);
+    const filter = vi
+      .spyOn(catalogApi, "filterPage")
+      .mockResolvedValue({ results: [], page: 1, hasMore: false });
 
     render(
       <MemoryRouter>
@@ -85,13 +92,16 @@ describe("clear advanced filters", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Crime$/ }));
 
     await waitFor(() =>
-      expect(filter).toHaveBeenCalledWith({
-        type: "tv",
-        query: "Batman",
-        genre: 80,
-        year: 2022,
-        minRating: 7,
-      }),
+      expect(filter).toHaveBeenCalledWith(
+        {
+          type: "tv",
+          query: "Batman",
+          genre: 80,
+          year: 2022,
+          minRating: 7,
+        },
+        1,
+      ),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Limpar filtros" }));
@@ -116,7 +126,10 @@ describe("clear advanced filters", () => {
     ).toBe("false");
     expect(screen.queryByRole("button", { name: "Limpar filtros" })).toBeNull();
     await waitFor(() =>
-      expect(filter).toHaveBeenLastCalledWith({ type: "tv", query: "Batman" }),
+      expect(filter).toHaveBeenLastCalledWith(
+        { type: "tv", query: "Batman" },
+        1,
+      ),
     );
   });
 });

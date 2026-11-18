@@ -10,7 +10,38 @@ export type CatalogItem = {
   mediaType?: MediaType;
 };
 
+export type CatalogPage = {
+  results: CatalogItem[];
+  page: number;
+  hasMore: boolean;
+};
 type CatalogResponse = { results: CatalogItem[] };
+const pendingPages = new Map<string, Promise<CatalogPage>>();
+
+function getPage(path: string): Promise<CatalogPage> {
+  const existing = pendingPages.get(path);
+  if (existing) return existing;
+  const request = fetch(`/api/catalog${path}`, {
+    credentials: "same-origin",
+  }).then(async (response) => {
+    if (!response.ok) throw new Error("Não foi possível carregar o catálogo.");
+    const data = (await response.json()) as CatalogPage;
+    if (
+      !Array.isArray(data.results) ||
+      typeof data.hasMore !== "boolean" ||
+      !Number.isInteger(data.page)
+    )
+      throw new Error("Resposta inválida do catálogo.");
+    return data;
+  });
+  pendingPages.set(path, request);
+  void request
+    .finally(() => {
+      if (pendingPages.get(path) === request) pendingPages.delete(path);
+    })
+    .catch(() => {});
+  return request;
+}
 
 // Share identical in-flight public catalog requests. No response is cached after settlement.
 const pendingCatalog = new Map<string, Promise<CatalogItem[]>>();
@@ -47,6 +78,27 @@ async function fetchCatalog(path: string): Promise<CatalogItem[]> {
 
 export const catalogApi = {
   trending: () => getCatalog("/trending"),
+  filterPage: (
+    filters: {
+      type: MediaType;
+      query?: string;
+      genre?: number;
+      year?: number;
+      minRating?: number;
+    },
+    page: number,
+  ): Promise<CatalogPage> => {
+    const params = new URLSearchParams({
+      type: filters.type,
+      page: String(page),
+    });
+    if (filters.query) params.set("q", filters.query);
+    if (filters.genre !== undefined) params.set("genre", String(filters.genre));
+    if (filters.year !== undefined) params.set("year", String(filters.year));
+    if (filters.minRating !== undefined)
+      params.set("minRating", String(filters.minRating));
+    return getPage(`/filter-page?${params}`);
+  },
   filter: (filters: {
     type: MediaType;
     query?: string;
