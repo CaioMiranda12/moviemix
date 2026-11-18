@@ -6,6 +6,7 @@ import {
   Routes,
   useNavigate,
 } from "react-router-dom";
+import { MobileNavigation } from "./components/MobileNavigation";
 import { LoginForm } from "./components/LoginForm";
 import { CatalogPage } from "./components/CatalogPage";
 import { ProfilePage } from "./components/ProfilePage";
@@ -75,75 +76,82 @@ function AppRoutes() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={
-          user ? (
-            <Navigate to="/" replace />
-          ) : (
-            <LoginForm onLogin={handleLogin} />
-          )
-        }
-      />
+    <>
+      {user && <MobileNavigation />}
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            user ? (
+              <Navigate to="/" replace />
+            ) : (
+              <LoginForm onLogin={handleLogin} />
+            )
+          }
+        />
 
-      <Route
-        path="/register"
-        element={user ? <Navigate to="/" replace /> : <RegisterForm />}
-      />
+        <Route
+          path="/register"
+          element={user ? <Navigate to="/" replace /> : <RegisterForm />}
+        />
 
-      <Route
-        path="/"
-        element={
-          user ? (
-            <CatalogPage
-              email={user.email}
-              onLogout={handleLogout}
-              loggingOut={loggingOut}
-              logoutError={logoutError}
-            />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
+        <Route
+          path="/"
+          element={
+            user ? (
+              <CatalogPage
+                email={user.email}
+                onLogout={handleLogout}
+                loggingOut={loggingOut}
+                logoutError={logoutError}
+              />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
-      <Route
-        path="/my-list"
-        element={user ? <FavoritesPage /> : <Navigate to="/login" replace />}
-      />
+        <Route
+          path="/my-list"
+          element={user ? <FavoritesPage /> : <Navigate to="/login" replace />}
+        />
 
-      <Route
-        path="/watching"
-        element={user ? <WatchStatusPage /> : <Navigate to="/login" replace />}
-      />
+        <Route
+          path="/watching"
+          element={
+            user ? <WatchStatusPage /> : <Navigate to="/login" replace />
+          }
+        />
 
-      <Route
-        path="/profile"
-        element={
-          user ? (
-            <ProfilePage email={user.email} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
+        <Route
+          path="/profile"
+          element={
+            user ? (
+              <ProfilePage email={user.email} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
-      <Route
-        path="/ratings"
-        element={user ? <RatingsPage /> : <Navigate to="/login" replace />}
-      />
+        <Route
+          path="/ratings"
+          element={user ? <RatingsPage /> : <Navigate to="/login" replace />}
+        />
 
-      <Route
-        path="/:mediaType/:id"
-        element={user ? <TitleDetailsPage /> : <Navigate to="/login" replace />}
-      />
+        <Route
+          path="/:mediaType/:id"
+          element={
+            user ? <TitleDetailsPage /> : <Navigate to="/login" replace />
+          }
+        />
 
-      <Route
-        path="*"
-        element={<Navigate to={user ? "/" : "/login"} replace />}
-      />
-    </Routes>
+        <Route
+          path="*"
+          element={<Navigate to={user ? "/" : "/login"} replace />}
+        />
+      </Routes>
+    </>
   );
 }
 

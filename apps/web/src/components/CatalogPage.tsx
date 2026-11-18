@@ -225,7 +225,7 @@ export function CatalogPage({
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
+    <main className="mx-auto min-h-screen max-w-6xl px-4 py-6 pb-28 sm:px-8 sm:py-8 md:pb-8">
       <a href="#catalog-content" className="skip-link">
         Pular para o conteúdo
       </a>
@@ -236,7 +236,7 @@ export function CatalogPage({
         </div>
         <nav
           aria-label="Navegação da conta"
-          className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3"
+          className="hidden w-full flex-wrap items-center gap-2 md:flex md:w-auto md:gap-3"
         >
           <Link
             to="/profile"
@@ -328,7 +328,7 @@ export function CatalogPage({
           </button>
         </form>
         <div
-          className="mt-4 flex flex-wrap gap-3"
+          className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap"
           aria-label="Filtros avançados"
         >
           <div>
@@ -346,7 +346,7 @@ export function CatalogPage({
               placeholder="Todos"
               value={year}
               onChange={(event) => setYear(event.target.value)}
-              className="w-32 rounded-xl border border-white/15 bg-zinc-900 px-4 py-2"
+              className="w-full min-w-32 rounded-xl border border-white/15 bg-zinc-900 px-4 py-2 sm:w-32"
             />
           </div>
           <div>
@@ -360,7 +360,7 @@ export function CatalogPage({
               id="catalog-rating"
               value={minRating}
               onChange={(event) => setMinRating(event.target.value)}
-              className="rounded-xl border border-white/15 bg-zinc-900 px-4 py-2"
+              className="w-full rounded-xl border border-white/15 bg-zinc-900 px-4 py-2 sm:w-auto"
             >
               <option value="">Qualquer nota</option>
               {[5, 6, 7, 8, 9].map((rating) => (
@@ -454,9 +454,30 @@ export function CatalogPage({
         </div>
 
         {loading ? (
-          <p role="status" className="text-zinc-400">
-            Carregando catálogo...
-          </p>
+          <div
+            role="status"
+            aria-label="Carregando catálogo"
+            className="space-y-4"
+          >
+            <span className="sr-only">Carregando catálogo...</span>
+            <div
+              aria-hidden="true"
+              className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            >
+              {Array.from({ length: 10 }, (_, index) => (
+                <div
+                  key={index}
+                  className="animate-pulse overflow-hidden rounded-2xl border border-white/10 bg-white/5"
+                >
+                  <div className="aspect-[2/3] bg-zinc-800" />
+                  <div className="space-y-3 p-4">
+                    <div className="h-4 w-4/5 rounded bg-zinc-700" />
+                    <div className="h-3 w-2/3 rounded bg-zinc-800" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : error ? (
           <div className="space-y-3">
             <p role="alert" className="text-red-400">
@@ -471,7 +492,22 @@ export function CatalogPage({
             </button>
           </div>
         ) : items.length === 0 && !hasMore ? (
-          <p className="text-zinc-400">Nenhum resultado encontrado.</p>
+          <div
+            role="status"
+            className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center"
+          >
+            <p className="font-semibold">Nenhum resultado encontrado.</p>
+            <p className="mt-2 text-sm text-zinc-400">
+              Experimente outro termo, remova um filtro ou volte aos destaques.
+            </p>
+            <button
+              type="button"
+              onClick={showTrending}
+              className="mt-4 rounded-xl border border-emerald-400/50 px-4 py-2 font-medium text-emerald-400 hover:bg-white/10"
+            >
+              Ver destaques
+            </button>
+          </div>
         ) : (
           <div className="space-y-6">
             {items.length > 0 ? (
