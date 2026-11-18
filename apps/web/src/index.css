@@ -11,6 +11,18 @@ body {
   margin: 0;
   min-width: 320px;
 }
+
+/* Evita que conteúdos flexíveis e campos longos ampliem a viewport mobile. */
+#root {
+  min-width: 0;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;

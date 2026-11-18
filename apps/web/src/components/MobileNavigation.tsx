@@ -22,7 +22,7 @@ export function MobileNavigation() {
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium focus-visible:outline-2 focus-visible:outline-emerald-400 ${isActive ? "text-emerald-400" : "text-zinc-300 hover:text-white"}`
+              `flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-[10px] min-[375px]:text-[11px] font-medium focus-visible:outline-2 focus-visible:outline-emerald-400 ${isActive ? "text-emerald-400" : "text-zinc-300 hover:text-white"}`
             }
             aria-label={label}
           >

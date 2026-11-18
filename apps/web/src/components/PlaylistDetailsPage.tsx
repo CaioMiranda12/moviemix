@@ -208,7 +208,7 @@ export function PlaylistDetailsPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-5 py-8 pb-28 text-zinc-100 sm:px-8 md:pb-8">
+    <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 pb-28 text-zinc-100 sm:px-8 sm:py-8 md:pb-8">
       <header className="mb-8 flex items-center justify-between border-b border-white/10 pb-6">
         <Link to="/lists" className="text-emerald-400 hover:underline">
           ← Minhas listas
@@ -254,14 +254,14 @@ export function PlaylistDetailsPage() {
                 ))}
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-zinc-950/30" />
-            <div className="relative flex min-h-64 flex-col justify-end gap-3 px-6 py-8 sm:px-10 sm:py-10">
+            <div className="relative flex min-h-56 flex-col justify-end gap-3 px-4 py-6 sm:min-h-64 sm:px-10 sm:py-10">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
                 {data.playlist.visibility === "PUBLIC"
                   ? "Coleção pública"
                   : "Coleção privada"}{" "}
                 · MovieMix
               </p>
-              <h1 className="max-w-3xl break-words text-4xl font-black tracking-tight sm:text-6xl">
+              <h1 className="max-w-3xl break-words text-3xl font-black tracking-tight sm:text-6xl">
                 {data.playlist.name}
               </h1>
               {data.playlist.description && (
@@ -282,7 +282,7 @@ export function PlaylistDetailsPage() {
             aria-label="Compartilhamento da lista"
             className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-zinc-900/50 p-4"
           >
-            <span className="flex-1 text-sm text-zinc-300">
+            <span className="min-w-0 flex-1 basis-full text-sm text-zinc-300 sm:basis-auto">
               {data.playlist.visibility === "PUBLIC"
                 ? "Pública: qualquer pessoa com o link pode visualizar."
                 : "Privada: apenas você pode visualizar."}
@@ -291,7 +291,7 @@ export function PlaylistDetailsPage() {
               type="button"
               disabled={sharingBusy}
               onClick={() => void toggleSharing()}
-              className="rounded-lg border border-emerald-500 px-4 py-2 text-emerald-300 disabled:opacity-50"
+              className="w-full rounded-lg border border-emerald-500 px-4 py-3 text-emerald-300 disabled:opacity-50 sm:w-auto sm:py-2"
             >
               {data.playlist.visibility === "PUBLIC"
                 ? "Desativar compartilhamento"
@@ -301,7 +301,7 @@ export function PlaylistDetailsPage() {
               <button
                 type="button"
                 onClick={() => void copyShareLink()}
-                className="rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-zinc-950"
+                className="w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-zinc-950 sm:w-auto sm:py-2"
               >
                 Copiar link
               </button>
@@ -317,7 +317,7 @@ export function PlaylistDetailsPage() {
                 onClick={() => setShowAdd((current) => !current)}
                 aria-expanded={showAdd}
                 aria-controls="playlist-add-section"
-                className="rounded-full bg-emerald-500 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                className="w-full rounded-full bg-emerald-500 px-5 py-3 font-semibold sm:w-auto text-zinc-950 transition hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
               >
                 {showAdd ? "Fechar busca" : "+ Adicionar títulos"}
               </button>
@@ -329,7 +329,7 @@ export function PlaylistDetailsPage() {
             ) : (
               <>
                 <div className="mb-4 flex flex-wrap gap-3">
-                  <div className="min-w-48 flex-1">
+                  <div className="min-w-0 flex-[1_1_100%] sm:flex-1">
                     <label htmlFor="playlist-filter" className="sr-only">
                       Buscar na lista
                     </label>
@@ -342,7 +342,7 @@ export function PlaylistDetailsPage() {
                       className="w-full rounded-xl border border-white/15 bg-zinc-900 px-4 py-3 text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
                     />
                   </div>
-                  <div>
+                  <div className="w-full sm:w-auto">
                     <label htmlFor="playlist-sort" className="sr-only">
                       Ordenar títulos
                     </label>
@@ -350,7 +350,7 @@ export function PlaylistDetailsPage() {
                       id="playlist-sort"
                       value={sort}
                       onChange={(event) => setSort(event.target.value)}
-                      className="rounded-xl border border-white/15 bg-zinc-900 px-4 py-3 text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+                      className="w-full rounded-xl border border-white/15 bg-zinc-900 px-4 py-3 text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
                     >
                       <option value="manual">Minha ordem</option>
                       <option value="recent">Adicionados recentemente</option>
@@ -396,7 +396,7 @@ export function PlaylistDetailsPage() {
                         if (source) void moveItem(source, itemKey(item));
                       }}
                       onDragEnd={() => setDragging(null)}
-                      className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-white/5 sm:gap-5 sm:px-5"
+                      className="group flex min-w-0 flex-wrap items-center gap-3 px-3 py-3 transition-colors sm:flex-nowrap hover:bg-white/5 sm:gap-5 sm:px-5"
                     >
                       <span
                         aria-hidden="true"
@@ -475,7 +475,7 @@ export function PlaylistDetailsPage() {
                         disabled={busy}
                         onClick={() => void remove(item.mediaType, item.id)}
                         aria-label={`Remover ${item.title} da lista`}
-                        className="shrink-0 rounded-lg border border-white/15 px-3 py-2 text-sm text-zinc-300 hover:border-red-500/50 hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 disabled:opacity-50"
+                        className="ml-auto shrink-0 rounded-lg border border-white/15 px-3 py-2 text-sm text-zinc-300 hover:border-red-500/50 hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 disabled:opacity-50"
                       >
                         Remover
                       </button>
@@ -500,7 +500,7 @@ export function PlaylistDetailsPage() {
               onSubmit={search}
               className="mb-5 flex flex-wrap items-end gap-3"
             >
-              <div className="min-w-48 flex-1">
+              <div className="min-w-0 flex-[1_1_100%] sm:flex-1">
                 <label htmlFor="playlist-search" className="mb-2 block">
                   Buscar título
                 </label>
@@ -513,7 +513,7 @@ export function PlaylistDetailsPage() {
                   required
                 />
               </div>
-              <div>
+              <div className="min-w-0 flex-[1_1_100%] sm:flex-none">
                 <label htmlFor="playlist-type" className="mb-2 block">
                   Tipo
                 </label>
@@ -524,7 +524,7 @@ export function PlaylistDetailsPage() {
                     setType(e.target.value as MediaType);
                     setResults([]);
                   }}
-                  className="rounded-lg border border-white/20 bg-zinc-900 px-3 py-3"
+                  className="w-full rounded-lg border border-white/20 bg-zinc-900 px-3 py-3"
                 >
                   <option value="movie">Filmes</option>
                   <option value="tv">Séries</option>
@@ -532,7 +532,7 @@ export function PlaylistDetailsPage() {
               </div>
               <button
                 disabled={searching}
-                className="rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-zinc-950 disabled:opacity-50"
+                className="w-full rounded-lg bg-emerald-500 px-4 py-3 font-semibold text-zinc-950 disabled:opacity-50 sm:w-auto"
               >
                 {searching ? "Buscando..." : "Buscar"}
               </button>
@@ -541,9 +541,11 @@ export function PlaylistDetailsPage() {
               {results.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-white/15 p-3"
+                  className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-white/15 p-3 sm:flex-nowrap"
                 >
-                  <span className="min-w-0 truncate">{item.title}</span>
+                  <span className="min-w-0 flex-1 break-words">
+                    {item.title}
+                  </span>
                   <button
                     type="button"
                     disabled={
@@ -555,7 +557,7 @@ export function PlaylistDetailsPage() {
                       )
                     }
                     onClick={() => void add(item)}
-                    className="shrink-0 rounded bg-emerald-500 px-3 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-50"
+                    className="shrink-0 rounded bg-emerald-500 px-3 py-3 text-sm font-semibold text-zinc-950 disabled:opacity-50"
                   >
                     {data.items.some(
                       (existing) =>

@@ -142,7 +142,7 @@ export function PublicPlaylistPage({ isAuthenticated }: Props) {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-5 py-8 text-zinc-100 sm:px-8">
+    <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 pb-8 text-zinc-100 sm:px-8 sm:py-8">
       <header className="mb-8">
         <Link to="/" className="font-bold text-emerald-400">
           MovieMix
@@ -164,11 +164,11 @@ export function PublicPlaylistPage({ isAuthenticated }: Props) {
       )}
       {data && !error && (
         <>
-          <section className="mb-8 rounded-3xl border border-white/10 bg-gradient-to-br from-emerald-950 to-zinc-900 p-8">
+          <section className="mb-8 rounded-3xl border border-white/10 bg-gradient-to-br from-emerald-950 to-zinc-900 p-5 sm:p-8">
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-emerald-300">
               Coleção compartilhada · MovieMix
             </p>
-            <h1 className="break-words text-4xl font-black">
+            <h1 className="break-words text-3xl font-black sm:text-4xl">
               {data.playlist.name}
             </h1>
             {data.playlist.description && (
@@ -186,9 +186,9 @@ export function PublicPlaylistPage({ isAuthenticated }: Props) {
             {data.items.map((item, index) => (
               <li
                 key={`${item.mediaType}-${item.id}`}
-                className="flex items-center gap-3 p-4 sm:gap-4"
+                className="flex min-w-0 items-center gap-2 p-3 sm:gap-4 sm:p-4"
               >
-                <span className="w-6 shrink-0 text-sm text-zinc-500">
+                <span className="hidden w-6 shrink-0 text-sm text-zinc-500 sm:block">
                   {index + 1}
                 </span>
                 {item.posterPath ? (
@@ -235,10 +235,13 @@ export function PublicPlaylistPage({ isAuthenticated }: Props) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="save-title"
-            className="w-full max-w-md rounded-2xl border border-white/15 bg-zinc-900 p-6 shadow-2xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-white/15 bg-zinc-900 p-4 shadow-2xl sm:p-6"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
-              <h2 id="save-title" className="text-xl font-bold">
+              <h2
+                id="save-title"
+                className="min-w-0 break-words text-lg font-bold sm:text-xl"
+              >
                 Salvar “{selectedItem.title}”
               </h2>
               <button
@@ -282,7 +285,7 @@ export function PublicPlaylistPage({ isAuthenticated }: Props) {
                       <legend className="mb-2 font-semibold">
                         Onde deseja salvar?
                       </legend>
-                      <label className="flex items-center gap-2">
+                      <label className="flex min-h-11 items-center gap-2">
                         <input
                           type="radio"
                           name="destination"
@@ -310,7 +313,7 @@ export function PublicPlaylistPage({ isAuthenticated }: Props) {
                           ))}
                         </select>
                       )}
-                      <label className="flex items-center gap-2">
+                      <label className="flex min-h-11 items-center gap-2">
                         <input
                           type="radio"
                           name="destination"
