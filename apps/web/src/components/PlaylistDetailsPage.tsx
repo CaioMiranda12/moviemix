@@ -537,37 +537,69 @@ export function PlaylistDetailsPage() {
                 {searching ? "Buscando..." : "Buscar"}
               </button>
             </form>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {results.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-white/15 p-3 sm:flex-nowrap"
-                >
-                  <span className="min-w-0 flex-1 break-words">
-                    {item.title}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={
-                      busy ||
-                      data.items.some(
-                        (existing) =>
-                          existing.id === item.id &&
-                          existing.mediaType === type,
-                      )
-                    }
-                    onClick={() => void add(item)}
-                    className="shrink-0 rounded bg-emerald-500 px-3 py-3 text-sm font-semibold text-zinc-950 disabled:opacity-50"
+            <ul
+              className="grid gap-3 sm:grid-cols-2"
+              aria-label="Resultados da busca"
+            >
+              {results.map((item) => {
+                const alreadyAdded = data.items.some(
+                  (existing) =>
+                    existing.id === item.id && existing.mediaType === type,
+                );
+                const year = /^\d{4}/.exec(item.releaseDate)?.[0];
+                const rating =
+                  Number.isFinite(item.voteAverage) && item.voteAverage > 0
+                    ? item.voteAverage.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1,
+                      })
+                    : null;
+                return (
+                  <li
+                    key={item.id}
+                    className="flex min-w-0 items-center gap-3 rounded-xl border border-white/15 bg-white/[0.03] p-3"
                   >
-                    {data.items.some(
-                      (existing) =>
-                        existing.id === item.id && existing.mediaType === type,
-                    )
-                      ? "Adicionado"
-                      : "Adicionar"}
-                  </button>
-                </li>
-              ))}
+                    {item.posterPath ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w185${item.posterPath}`}
+                        alt={`Pôster de ${item.title}`}
+                        loading="lazy"
+                        className="h-24 w-16 shrink-0 rounded-md bg-zinc-800 object-cover sm:h-28 sm:w-[75px]"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-24 w-16 shrink-0 items-center justify-center rounded-md bg-zinc-800 px-1 text-center text-[10px] text-zinc-400 sm:h-28 sm:w-[75px]"
+                        aria-label="Pôster indisponível"
+                      >
+                        Sem pôster
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-sm font-semibold leading-snug sm:text-base">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-400 sm:text-sm">
+                        {year ?? "Ano indisponível"} ·{" "}
+                        {type === "movie" ? "Filme" : "Série"}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-300 sm:text-sm">
+                        {rating
+                          ? `★ ${rating} / 10 · TMDB`
+                          : "Sem avaliação no TMDB"}
+                      </p>
+                      <button
+                        type="button"
+                        disabled={busy || savingOrder || alreadyAdded}
+                        onClick={() => void add(item)}
+                        className="mt-2 min-h-10 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-zinc-950 disabled:opacity-50 sm:text-sm"
+                        aria-label={`${alreadyAdded ? "Já adicionado" : "Adicionar"} ${item.title} à lista`}
+                      >
+                        {alreadyAdded ? "Adicionado" : "+ Adicionar"}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         </>
