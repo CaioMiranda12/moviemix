@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ListSearch } from "./ListSearch";
+import { ListSort } from "./ListSort";
+import { sortListItems, type ListSortKey } from "./list-sort-utils";
 import { matchesListSearch } from "./list-search-utils";
 import { favoritesApi, type FavoriteItem } from "../lib/favorites-api";
 import { ratingsApi } from "../lib/ratings-api";
@@ -9,6 +11,7 @@ export function FavoritesPage() {
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ListSortKey>("added-newest");
   const [scores, setScores] = useState<Record<string, number>>({});
   const [removing, setRemoving] = useState("");
   const [error, setError] = useState("");
@@ -59,7 +62,11 @@ export function FavoritesPage() {
     };
   }, []);
 
-  const visible = items.filter((item) => matchesListSearch(item.title, query));
+  const visible = sortListItems(
+    items.filter((item) => matchesListSearch(item.title, query)),
+    sort,
+    (item) => scores[`${item.mediaType}-${item.id}`],
+  );
 
   async function remove(item: FavoriteItem) {
     const key = `${item.mediaType}-${item.id}`;
@@ -97,7 +104,23 @@ export function FavoritesPage() {
       <section className="py-10">
         <h1 className="text-3xl font-bold">Minha Lista</h1>
         <p className="mt-2 text-zinc-400">Seus filmes e séries favoritos.</p>
-        <ListSearch value={query} onChange={setQuery} />
+        <div className="flex flex-wrap items-end gap-4">
+          <ListSearch value={query} onChange={setQuery} />
+          <ListSort
+            value={sort}
+            onChange={(value) => setSort(value as ListSortKey)}
+            options={[
+              { value: "added-newest", label: "Adicionados recentemente" },
+              { value: "added-oldest", label: "Adicionados há mais tempo" },
+              { value: "title-asc", label: "Título (A–Z)" },
+              { value: "title-desc", label: "Título (Z–A)" },
+              { value: "release-newest", label: "Lançamento (mais recente)" },
+              { value: "release-oldest", label: "Lançamento (mais antigo)" },
+              { value: "score-highest", label: "Minha nota (maior primeiro)" },
+              { value: "score-lowest", label: "Minha nota (menor primeiro)" },
+            ]}
+          />
+        </div>
         {error && (
           <p role="alert" className="mt-6 text-red-400">
             {error}

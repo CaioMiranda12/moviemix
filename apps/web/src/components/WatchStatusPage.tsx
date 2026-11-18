@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ListSearch } from "./ListSearch";
+import { ListSort } from "./ListSort";
+import { sortListItems, type ListSortKey } from "./list-sort-utils";
 import { matchesListSearch } from "./list-search-utils";
 import {
   watchStatusApi,
@@ -16,6 +18,7 @@ export function WatchStatusPage() {
   const [filter, setFilter] = useState<Filter>("ALL");
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ListSortKey>("updated-newest");
   const [removing, setRemoving] = useState("");
   const [error, setError] = useState("");
 
@@ -65,10 +68,13 @@ export function WatchStatusPage() {
     }
   }
 
-  const visible = items.filter(
-    (item) =>
-      (filter === "ALL" || item.status === filter) &&
-      matchesListSearch(item.title, query),
+  const visible = sortListItems(
+    items.filter(
+      (item) =>
+        (filter === "ALL" || item.status === filter) &&
+        matchesListSearch(item.title, query),
+    ),
+    sort,
   );
 
   return (
@@ -86,7 +92,21 @@ export function WatchStatusPage() {
         <p className="mt-2 text-zinc-400">
           Organize o que deseja assistir, está assistindo ou já concluiu.
         </p>
-        <ListSearch value={query} onChange={setQuery} />
+        <div className="flex flex-wrap items-end gap-4">
+          <ListSearch value={query} onChange={setQuery} />
+          <ListSort
+            value={sort}
+            onChange={(value) => setSort(value as ListSortKey)}
+            options={[
+              { value: "updated-newest", label: "Atualizados recentemente" },
+              { value: "updated-oldest", label: "Atualizados há mais tempo" },
+              { value: "title-asc", label: "Título (A–Z)" },
+              { value: "title-desc", label: "Título (Z–A)" },
+              { value: "release-newest", label: "Lançamento (mais recente)" },
+              { value: "release-oldest", label: "Lançamento (mais antigo)" },
+            ]}
+          />
+        </div>
         <div
           className="mt-6 flex flex-wrap gap-2"
           aria-label="Filtrar por status"
