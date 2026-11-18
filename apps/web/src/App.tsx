@@ -11,6 +11,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { MobileNavigation } from "./components/MobileNavigation";
+import { QuickCreatePlaylist } from "./components/QuickCreatePlaylist";
 import { LoginForm } from "./components/LoginForm";
 import { CatalogPage } from "./components/CatalogPage";
 import { ProfilePage } from "./components/ProfilePage";
@@ -89,6 +90,7 @@ function AppRoutes() {
   return (
     <>
       {user && <MobileNavigation />}
+      {user && <QuickCreatePlaylist />}
       <Routes>
         <Route
           path="/login"

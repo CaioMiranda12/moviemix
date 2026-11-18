@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { QuickCreatePlaylist } from "./QuickCreatePlaylist";
 
 const destinations = [
   { to: "/", label: "Explorar", symbol: "⌕", end: true },
@@ -15,7 +16,7 @@ export function MobileNavigation() {
       aria-label="Navegação principal mobile"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-white/15 bg-zinc-950/95 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur-md md:hidden"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-5">
+      <div className="mx-auto grid max-w-lg grid-cols-6">
         {destinations.map(({ to, label, symbol, end }) => (
           <NavLink
             key={to}
@@ -37,6 +38,7 @@ export function MobileNavigation() {
             )}
           </NavLink>
         ))}
+        <QuickCreatePlaylist mobile />
       </div>
     </nav>
   );
