@@ -19,6 +19,8 @@ import {
   makeGetTrendingMovies,
 } from "./modules/catalog/tmdb.client.js";
 
+import { cacheCatalogProviders } from "./modules/catalog/catalog-cache.js";
+
 const databaseUrl = process.env.DATABASE_URL;
 const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : null;
 
@@ -26,10 +28,18 @@ const db = pool ? drizzle(pool) : null;
 
 const tmdbToken = process.env.TMDB_READ_ACCESS_TOKEN?.trim();
 
+const catalog = tmdbToken
+  ? cacheCatalogProviders({
+      getTrendingMovies: makeGetTrendingMovies(tmdbToken),
+      searchCatalog: makeSearchCatalog(tmdbToken),
+      getCatalogDetails: makeGetCatalogDetails(tmdbToken),
+    })
+  : undefined;
+
 const app = buildApp({
-  getTrendingMovies: tmdbToken ? makeGetTrendingMovies(tmdbToken) : undefined,
-  searchCatalog: tmdbToken ? makeSearchCatalog(tmdbToken) : undefined,
-  getCatalogDetails: tmdbToken ? makeGetCatalogDetails(tmdbToken) : undefined,
+  getTrendingMovies: catalog?.getTrendingMovies,
+  searchCatalog: catalog?.searchCatalog,
+  getCatalogDetails: catalog?.getCatalogDetails,
   createUser: db ? makeCreateUser(db) : undefined,
   findUserByEmail: db ? makeFindUserByEmail(db) : undefined,
   createSession: db ? makeCreateSession(db) : undefined,
