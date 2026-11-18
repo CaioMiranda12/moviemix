@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ListSearch } from "./ListSearch";
+import { ListSort } from "./ListSort";
+import { sortListItems, type ListSortKey } from "./list-sort-utils";
 import { matchesListSearch } from "./list-search-utils";
 import { ratingsApi, type RatingItem } from "../lib/ratings-api";
 
@@ -8,6 +10,7 @@ export function RatingsPage() {
   const [items, setItems] = useState<RatingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ListSortKey>("updated-newest");
   const [removing, setRemoving] = useState("");
   const [error, setError] = useState("");
 
@@ -34,7 +37,10 @@ export function RatingsPage() {
     };
   }, []);
 
-  const visible = items.filter((item) => matchesListSearch(item.title, query));
+  const visible = sortListItems(
+    items.filter((item) => matchesListSearch(item.title, query)),
+    sort,
+  );
 
   async function remove(item: RatingItem) {
     const key = `${item.mediaType}-${item.id}`;
@@ -74,7 +80,23 @@ export function RatingsPage() {
         <p className="mt-2 text-zinc-400">
           Suas notas pessoais para filmes e séries.
         </p>
-        <ListSearch value={query} onChange={setQuery} />
+        <div className="flex flex-wrap items-end gap-4">
+          <ListSearch value={query} onChange={setQuery} />
+          <ListSort
+            value={sort}
+            onChange={(value) => setSort(value as ListSortKey)}
+            options={[
+              { value: "updated-newest", label: "Avaliados recentemente" },
+              { value: "updated-oldest", label: "Avaliados há mais tempo" },
+              { value: "title-asc", label: "Título (A–Z)" },
+              { value: "title-desc", label: "Título (Z–A)" },
+              { value: "release-newest", label: "Lançamento (mais recente)" },
+              { value: "release-oldest", label: "Lançamento (mais antigo)" },
+              { value: "score-highest", label: "Nota (maior primeiro)" },
+              { value: "score-lowest", label: "Nota (menor primeiro)" },
+            ]}
+          />
+        </div>
         {error && (
           <p role="alert" className="mt-6 text-red-400">
             {error}
