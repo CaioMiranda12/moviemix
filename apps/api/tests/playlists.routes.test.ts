@@ -25,6 +25,7 @@ function setup() {
     items: vi.fn(async () => []),
     addItem: vi.fn(async () => "added" as const),
     removeItem: vi.fn(async () => "removed" as const),
+    reorderItems: vi.fn(async () => "updated" as const),
     list: vi.fn(async () => [item]),
     create: vi.fn(async (_user, name) => ({ ...item, name })),
     rename: vi.fn(async (_user, _id, name) => ({ ...item, name })),
@@ -231,6 +232,91 @@ describe("Playlist items", () => {
       "tv",
       456,
     );
+    await app.close();
+  });
+});
+
+describe("Playlist manual ordering", () => {
+  const url = `/playlists/${playlistId}/items/order`;
+  const valid = {
+    items: [
+      { mediaType: "movie", id: 123 },
+      { mediaType: "tv", id: 456 },
+    ],
+  };
+
+  it("requires authentication", async () => {
+    const { app } = setup();
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url,
+          headers: { origin },
+          payload: valid,
+        })
+      ).statusCode,
+    ).toBe(401);
+    await app.close();
+  });
+
+  it("rejects cross-origin writes", async () => {
+    const { app, repository } = setup();
+    const response = await app.inject({
+      method: "PUT",
+      url,
+      headers: { cookie, origin: "https://evil.example" },
+      payload: valid,
+    });
+    expect(response.statusCode).toBe(403);
+    expect(repository.reorderItems).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it("validates the payload", async () => {
+    const { app, repository } = setup();
+    const response = await app.inject({
+      method: "PUT",
+      url,
+      headers: { cookie, origin },
+      payload: { items: [{ mediaType: "movie", id: -1 }] },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(repository.reorderItems).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it("saves the order for the authenticated user", async () => {
+    const { app, repository } = setup();
+    const response = await app.inject({
+      method: "PUT",
+      url,
+      headers: { cookie, origin },
+      payload: valid,
+    });
+    expect(response.statusCode).toBe(204);
+    expect(repository.reorderItems).toHaveBeenCalledWith(
+      userId,
+      playlistId,
+      valid.items,
+    );
+    await app.close();
+  });
+
+  it("rejects stale ordering and unknown playlists", async () => {
+    const { app, repository } = setup();
+    vi.mocked(repository.reorderItems)
+      .mockResolvedValueOnce("mismatch")
+      .mockResolvedValueOnce("missing");
+    const headers = { cookie, origin };
+    expect(
+      (await app.inject({ method: "PUT", url, headers, payload: valid }))
+        .statusCode,
+    ).toBe(409);
+    expect(
+      (await app.inject({ method: "PUT", url, headers, payload: valid }))
+        .statusCode,
+    ).toBe(404);
     await app.close();
   });
 });

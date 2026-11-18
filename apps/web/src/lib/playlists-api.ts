@@ -76,6 +76,15 @@ export const playlistsApi = {
       method: "DELETE",
     });
   },
+  async reorderItems(
+    id: string,
+    items: Array<{ mediaType: "movie" | "tv"; id: number }>,
+  ): Promise<void> {
+    await request(`/${encodeURIComponent(id)}/items/order`, {
+      method: "PUT",
+      body: JSON.stringify({ items }),
+    });
+  },
   async list(): Promise<Playlist[]> {
     const result = await request("");
     if (
