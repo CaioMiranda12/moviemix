@@ -1,3 +1,5 @@
+import { MediaDetailsModal } from "./components/MediaDetailsModal";
+import type { Location } from "react-router-dom";
 import { PublicPlaylistPage } from "./components/PublicPlaylistPage";
 import { PlaylistDetailsPage } from "./components/PlaylistDetailsPage";
 import { PlaylistsPage } from "./components/PlaylistsPage";
@@ -29,6 +31,9 @@ function AppRoutes() {
   const [logoutError, setLogoutError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const backgroundLocation = (
+    location.state as { backgroundLocation?: Location } | null
+  )?.backgroundLocation;
 
   useEffect(() => {
     let active = true;
@@ -91,7 +96,7 @@ function AppRoutes() {
     <>
       {user && <MobileNavigation />}
       {user && <QuickCreatePlaylist />}
-      <Routes>
+      <Routes location={backgroundLocation || location}>
         <Route
           path="/login"
           element={
@@ -180,6 +185,11 @@ function AppRoutes() {
           element={<Navigate to={user ? "/" : "/login"} replace />}
         />
       </Routes>
+      {backgroundLocation && user && (
+        <Routes>
+          <Route path="/:mediaType/:id" element={<MediaDetailsModal />} />
+        </Routes>
+      )}
     </>
   );
 }

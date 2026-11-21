@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   catalogApi,
   type CatalogItem,
@@ -38,6 +38,7 @@ type CatalogPageProps = {
 };
 
 function MovieCard({ item }: { item: CatalogItem }) {
+  const location = useLocation();
   const posterUrl = item.posterPath
     ? `https://image.tmdb.org/t/p/w342${item.posterPath}`
     : null;
@@ -47,6 +48,7 @@ function MovieCard({ item }: { item: CatalogItem }) {
     <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
       <Link
         to={`/${item.mediaType ?? "movie"}/${item.id}`}
+        state={{ backgroundLocation: location }}
         className="block h-full hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-emerald-400"
         aria-label={`Ver detalhes de ${item.title}`}
       >
