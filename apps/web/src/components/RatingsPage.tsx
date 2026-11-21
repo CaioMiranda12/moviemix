@@ -1,6 +1,6 @@
 import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ListSearch } from "./ListSearch";
 import { ListSort } from "./ListSort";
 import { sortListItems, type ListSortKey } from "./list-sort-utils";
@@ -8,6 +8,7 @@ import { matchesListSearch } from "./list-search-utils";
 import { ratingsApi, type RatingItem } from "../lib/ratings-api";
 
 export function RatingsPage() {
+  const location = useLocation();
   const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [items, setItems] = useState<RatingItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,6 +143,7 @@ export function RatingsPage() {
               >
                 <Link
                   to={`/${item.mediaType}/${item.id}`}
+                  state={{ backgroundLocation: location }}
                   className="block hover:bg-white/5"
                   aria-label={`Ver detalhes de ${item.title}`}
                 >

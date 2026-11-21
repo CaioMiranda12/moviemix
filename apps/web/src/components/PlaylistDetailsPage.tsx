@@ -1,6 +1,6 @@
 import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   catalogApi,
   type CatalogItem,
@@ -13,6 +13,7 @@ import {
 } from "../lib/playlists-api";
 
 export function PlaylistDetailsPage() {
+  const location = useLocation();
   const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const { id } = useParams();
   const [data, setData] = useState<PlaylistDetails | null>(null);
@@ -435,6 +436,7 @@ export function PlaylistDetailsPage() {
                         <Link
                           className="block truncate font-semibold text-zinc-100 hover:text-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
                           to={`/${item.mediaType}/${item.id}`}
+                          state={{ backgroundLocation: location }}
                         >
                           {item.title}
                         </Link>

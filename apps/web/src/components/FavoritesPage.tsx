@@ -1,6 +1,6 @@
 import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ListSearch } from "./ListSearch";
 import { ListSort } from "./ListSort";
 import { sortListItems, type ListSortKey } from "./list-sort-utils";
@@ -9,6 +9,7 @@ import { favoritesApi, type FavoriteItem } from "../lib/favorites-api";
 import { ratingsApi } from "../lib/ratings-api";
 
 export function FavoritesPage() {
+  const location = useLocation();
   const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,6 +168,7 @@ export function FavoritesPage() {
               >
                 <Link
                   to={`/${item.mediaType}/${item.id}`}
+                  state={{ backgroundLocation: location }}
                   className="block hover:bg-white/5"
                   aria-label={`Ver detalhes de ${item.title}`}
                 >

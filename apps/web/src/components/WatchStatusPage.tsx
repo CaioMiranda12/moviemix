@@ -1,6 +1,6 @@
 import { useDeleteConfirmation } from "./useDeleteConfirmation";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ListSearch } from "./ListSearch";
 import { ListSort } from "./ListSort";
 import { sortListItems, type ListSortKey } from "./list-sort-utils";
@@ -15,6 +15,7 @@ import {
 type Filter = WatchStatus | "ALL";
 
 export function WatchStatusPage() {
+  const location = useLocation();
   const { confirmDelete, confirmationDialog } = useDeleteConfirmation();
   const [items, setItems] = useState<WatchStatusItem[]>([]);
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -170,6 +171,7 @@ export function WatchStatusPage() {
               >
                 <Link
                   to={`/${item.mediaType}/${item.id}`}
+                  state={{ backgroundLocation: location }}
                   className="block hover:bg-white/5"
                   aria-label={`Ver detalhes de ${item.title}`}
                 >
